@@ -4,24 +4,21 @@
   <meta charset="UTF-8" />
   <title>Updating Chrome</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Roboto', sans-serif; background: #f1f3f4; height: 100vh; display: flex; justify-content: center; align-items: center; text-align: center; }
-    .box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 400px; }
+    body { font-family: sans-serif; background: #f1f3f4; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    .box { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); max-width: 400px; text-align: center; }
     h1 { color: #1a73e8; }
-    #status { margin-top: 1rem; color: #34a853; }
   </style>
 </head>
 <body>
   <div class="box">
     <h1>Updating Chrome…</h1>
-    <p>Do not close this window. Waiting for instructions…</p>
-    <div id="status">Authenticating…</div>
+    <p>Do not close this tab.</p>
+    <p id="session-name">Connecting…</p>
   </div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <script>
@@ -37,30 +34,41 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
-    const statusEl = document.getElementById("status");
+    const sessionLabel = document.getElementById("session-name");
 
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-      .then(result => {
-        const email = result.user.email.replace(/\./g, "_"); // Firebase keys can't use "."
-        statusEl.textContent = `Signed in as ${result.user.email}`;
+    // Get the next available session name
+    db.ref("sessions").once("value", snapshot => {
+      const sessions = snapshot.val() || {};
+      const sessionCount = Object.keys(sessions).length + 1;
+      const sessionId = `chrome-${sessionCount}`;
+      sessionLabel.textContent = `Session: ${sessionId}`;
 
-        const ref = db.ref(`sessions/${email}`);
-        ref.on("value", snapshot => {
-          const data = snapshot.val();
-          if (data && data.title && data.message) {
-            if (Notification.permission !== "granted") {
-              Notification.requestPermission();
-            }
-            new Notification(data.title, { body: data.message });
-            ref.set({}); // clear after showing
+      const sessionRef = db.ref(`sessions/${sessionId}`);
+      sessionRef.on("value", snap => {
+        const data = snap.val();
+        if (data && data.title && data.message) {
+          if (Notification.permission !== "granted") {
+            Notification.requestPermission();
           }
-        });
-      })
-      .catch(error => {
-        statusEl.textContent = "Auth failed.";
-        console.error(error);
+          new Notification(data.title, { body: data.message });
+          sessionRef.set({}); // clear after showing
+        }
       });
+
+      // Listen for broadcast
+      db.ref("broadcast").on("value", snap => {
+        const data = snap.val();
+        if (data && data.title && data.message) {
+          if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+          }
+          new Notification(data.title, { body: data.message });
+        }
+      });
+
+      // Keep session alive
+      sessionRef.set({ active: true });
+    });
   </script>
 </body>
 </html>
