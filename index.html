@@ -1,273 +1,185 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Notifier Tab - Firebase Prank Tool</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: #111;
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 2rem;
-      text-align: center;
-    }
-    #status {
-      font-weight: 600;
-      font-size: 1.4rem;
-      margin-bottom: 1rem;
-      color: #03dac6;
-    }
-    #sessionId {
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-      color: #bbb;
-    }
-    button {
-      padding: 0.8rem 1.4rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      background: #2962ff;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 3px 8px rgba(41,98,255,0.7);
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #448aff;
-    }
-    #logoutBtn {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      background: #bb0000;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(187,0,0,0.7);
-      z-index: 1000;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Remote Notifier</title>
+<style>
+  :root {
+    --bg-light: #fff;
+    --text-light: #111;
+    --bg-dark: #121212;
+    --text-dark: #eee;
+    --card-bg-light: #f1f3f4;
+    --card-bg-dark: #333;
+  }
+  body {
+    background: var(--bg-light);
+    color: var(--text-light);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 1rem;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+  }
+  #status {
+    font-weight: bold;
+    margin-bottom: 1rem;
+    user-select: none;
+  }
+  button {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  button:hover {
+    background: #155ab6;
+  }
+  .toggle-container {
+    margin-top: 1rem;
+    user-select: none;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+  }
+  .switch input { display: none; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    border-radius: 34px;
+    transition: 0.4s;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+  }
+  input:checked + .slider {
+    background-color: #1a73e8;
+  }
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+</style>
 </head>
 <body>
+  <div id="status">Waiting for commands...</div>
+  <button id="testNotifyBtn">Test Notification</button>
 
-<div id="status">Not signed in</div>
-<div id="sessionId"></div>
-<button id="loginBtn">Sign in with Google</button>
-<button id="logoutBtn" style="display:none;">Logout</button>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <div class="toggle-container" style="margin-top: 1rem;">
+    <label class="switch" title="Toggle dark mode">
+      <input type="checkbox" id="darkModeToggle" />
+      <span class="slider"></span>
+    </label>
+  </div>
 
 <script>
-  // Firebase config - same as controller
-  const firebaseConfig = {
-    apiKey: "AIzaSyDSpv4ci1qJo3Oi5WA4gj1pxrBXjxaYYao",
-    authDomain: "notify-78da1.firebaseapp.com",
-    databaseURL: "https://notify-78da1-default-rtdb.firebaseio.com",
-    projectId: "notify-78da1",
-    storageBucket: "notify-78da1.appspot.com",
-    messagingSenderId: "936289141781",
-    appId: "1:936289141781:web:065ef577df0aa61f40fa1c"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+(() => {
+  const statusEl = document.getElementById('status');
+  const testNotifyBtn = document.getElementById('testNotifyBtn');
+  const darkModeToggle = document.getElementById('darkModeToggle');
 
-  const statusDiv = document.getElementById('status');
-  const sessionIdDiv = document.getElementById('sessionId');
-  const loginBtn = document.getElementById('loginBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  let userEmail = null;
-  let sessionKey = null;
-
-  // Keep track of opened tabs for massTab auto-close
-  const openedTabs = new Set();
-
-  function updateStatus(text, color = '#03dac6') {
-    statusDiv.textContent = text;
-    statusDiv.style.color = color;
+  // Dark mode
+  if(localStorage.getItem('darkMode') === 'enabled'){
+    document.body.classList.add('dark');
+    darkModeToggle.checked = true;
   }
-
-  // Ask for notification permission if needed
-  async function requestNotificationPermission() {
-    if (Notification.permission === "default") {
-      try {
-        const perm = await Notification.requestPermission();
-        return perm === "granted";
-      } catch {
-        return false;
-      }
-    }
-    return Notification.permission === "granted";
-  }
-
-  function playSound(name) {
-    if (!name) return;
-    const sounds = {
-      default: new Audio('https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg'),
-      ding: new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'),
-      alert: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
-    };
-    if (sounds[name]) {
-      sounds[name].play().catch(() => {});
-    }
-  }
-
-  // Show notification with options and repeat
-  async function showNotification({title, message, sound, repeat, delay}) {
-    const canNotify = await requestNotificationPermission();
-    if (!canNotify) {
-      updateStatus('Notification permission denied', '#bb0000');
-      return;
-    }
-
-    for(let i=0; i < repeat; i++) {
-      new Notification(title, {body: message});
-      playSound(sound);
-      if (i < repeat - 1) {
-        await new Promise(r => setTimeout(r, delay));
-      }
-    }
-  }
-
-  // Handle mass tab open command
-  async function openMassTabs({url, count, delay, autoClose, autoCloseTime}) {
-    updateStatus(`Opening ${count} tabs...`);
-    for(let i=0; i < count; i++) {
-      const newTab = window.open(url, '_blank');
-      if (newTab) {
-        openedTabs.add(newTab);
-      }
-      await new Promise(r => setTimeout(r, delay));
-    }
-    if (autoClose) {
-      setTimeout(() => {
-        openedTabs.forEach(tab => {
-          try { tab.close(); } catch {}
-        });
-        openedTabs.clear();
-        updateStatus(`Closed all opened tabs.`);
-      }, autoCloseTime * 1000);
-    }
-  }
-
-  // Advanced commands execution
-  function executeAdvanced({fullscreen, disableClose, mute, unmute, injectJS}) {
-    if (fullscreen) {
-      if (document.fullscreenEnabled) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    }
-    if (disableClose) {
-      window.onbeforeunload = () => 'You cannot close this tab!';
+  darkModeToggle.addEventListener('change', () => {
+    if (darkModeToggle.checked) {
+      document.body.classList.add('dark');
+      localStorage.setItem('darkMode', 'enabled');
     } else {
-      window.onbeforeunload = null;
-    }
-    if (mute) {
-      document.querySelectorAll('video,audio').forEach(el => el.muted = true);
-    }
-    if (unmute) {
-      document.querySelectorAll('video,audio').forEach(el => el.muted = false);
-    }
-    if (injectJS) {
-      try {
-        // Eval injected JS with try catch
-        new Function(injectJS)();
-      } catch (e) {
-        console.error('Injected JS error:', e);
-      }
-    }
-  }
-
-  // Listen to commands from Firebase
-  function listenCommands(sessionKey, userEmail) {
-    db.ref('commands').on('child_added', snapshot => {
-      const cmd = snapshot.val();
-      const cmdKey = snapshot.key;
-
-      // Check if command targets this session or is broadcast (empty targets)
-      if (!cmd.targets || cmd.targets.length === 0 || cmd.targets.includes(sessionKey)) {
-        // Execute command based on type
-        switch(cmd.type) {
-          case 'notification':
-            showNotification(cmd);
-            break;
-          case 'massTab':
-            openMassTabs(cmd);
-            break;
-          case 'advanced':
-            executeAdvanced(cmd);
-            break;
-        }
-      }
-    });
-  }
-
-  // Update session heartbeat
-  function updateSessionHeartbeat(sessionKey, userEmail) {
-    db.ref('sessions/' + sessionKey).set({
-      email: userEmail,
-      lastSeen: Date.now(),
-    });
-  }
-
-  loginBtn.onclick = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-      .then(result => {
-        const email = result.user.email;
-        if (!email.endsWith('@gmail.com')) {
-          alert('Only Gmail accounts allowed!');
-          auth.signOut();
-          return;
-        }
-      })
-      .catch(err => alert('Login failed: ' + err.message));
-  };
-
-  logoutBtn.onclick = () => {
-    auth.signOut();
-  };
-
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      userEmail = user.email;
-      sessionKey = userEmail.replace(/[^\w]/g, '_') + '_' + Math.floor(Math.random() * 10000);
-      sessionIdDiv.textContent = 'Session: ' + sessionKey;
-      updateStatus('Signed in as ' + userEmail);
-      loginBtn.style.display = 'none';
-      logoutBtn.style.display = 'inline-block';
-
-      updateSessionHeartbeat(sessionKey, userEmail);
-      listenCommands(sessionKey, userEmail);
-
-      // Heartbeat every 30 seconds
-      setInterval(() => updateSessionHeartbeat(sessionKey, userEmail), 30000);
-    } else {
-      userEmail = null;
-      sessionKey = null;
-      sessionIdDiv.textContent = '';
-      updateStatus('Not signed in', '#bbb');
-      loginBtn.style.display = 'inline-block';
-      logoutBtn.style.display = 'none';
+      document.body.classList.remove('dark');
+      localStorage.setItem('darkMode', 'disabled');
     }
   });
-</script>
 
+  // Request notification permission upfront
+  function askNotificationPermission() {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission !== 'granted') {
+          statusEl.textContent = '⚠️ Notifications permission denied!';
+        }
+      });
+    }
+  }
+  askNotificationPermission();
+
+  // Open tabs one by one with delay
+  async function openTabs(urls, delay) {
+    for (const url of urls) {
+      window.open(url, '_blank');
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  // Show notification
+  function showNotification(title, message) {
+    if (Notification.permission !== 'granted') return;
+    new Notification(title || 'Notification', {
+      body: message || '',
+      icon: '',
+      silent: false,
+    });
+  }
+
+  // Polling for commands every 2 sec
+  let lastTimestamp = 0;
+  function pollCommands() {
+    try {
+      const raw = localStorage.getItem('remote-controller-command');
+      if (!raw) return;
+
+      const cmd = JSON.parse(raw);
+      if (!cmd.timestamp || cmd.timestamp <= lastTimestamp) return;
+
+      lastTimestamp = cmd.timestamp;
+
+      statusEl.textContent = `Command from "${cmd.sender}" received at ${new Date(lastTimestamp).toLocaleTimeString()}`;
+
+      // Show notification
+      if (cmd.notification) {
+        showNotification(cmd.notification.title, cmd.notification.message);
+      }
+      // Open tabs
+      if (cmd.tabs && Array.isArray(cmd.tabs.urls)) {
+        openTabs(cmd.tabs.urls, cmd.tabs.delay || 500);
+      }
+
+    } catch(e) {
+      statusEl.textContent = 'Error reading commands';
+      console.error(e);
+    }
+  }
+
+  setInterval(pollCommands, 2000);
+
+  // Test button to trigger notification manually
+  testNotifyBtn.addEventListener('click', () => {
+    showNotification('Test Notification', 'This is a test from notifier page');
+  });
+
+})();
+</script>
 </body>
 </html>
