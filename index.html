@@ -1,185 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Remote Notifier</title>
-<style>
-  :root {
-    --bg-light: #fff;
-    --text-light: #111;
-    --bg-dark: #121212;
-    --text-dark: #eee;
-    --card-bg-light: #f1f3f4;
-    --card-bg-dark: #333;
-  }
-  body {
-    background: var(--bg-light);
-    color: var(--text-light);
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 1rem;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  body.dark {
-    background: var(--bg-dark);
-    color: var(--text-dark);
-  }
-  #status {
-    font-weight: bold;
-    margin-bottom: 1rem;
-    user-select: none;
-  }
-  button {
-    background: #1a73e8;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    cursor: pointer;
-    user-select: none;
-  }
-  button:hover {
-    background: #155ab6;
-  }
-  .toggle-container {
-    margin-top: 1rem;
-    user-select: none;
-  }
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 26px;
-  }
-  .switch input { display: none; }
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #ccc;
-    border-radius: 34px;
-    transition: 0.4s;
-  }
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    border-radius: 50%;
-    transition: 0.4s;
-  }
-  input:checked + .slider {
-    background-color: #1a73e8;
-  }
-  input:checked + .slider:before {
-    transform: translateX(24px);
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifier Tab</title>
+  <style>
+    :root {
+      --main-bg: #f5f7fa;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --accent: #1a73e8;
+      --font: 'Segoe UI', sans-serif;
+      --shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: var(--font);
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #e3f2fd, #bbdefb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 2rem 2.5rem;
+      width: 90%;
+      max-width: 480px;
+      transition: all 0.3s ease;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #222;
+    }
+
+    .log {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #333;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
-  <div id="status">Waiting for commands...</div>
-  <button id="testNotifyBtn">Test Notification</button>
-
-  <div class="toggle-container" style="margin-top: 1rem;">
-    <label class="switch" title="Toggle dark mode">
-      <input type="checkbox" id="darkModeToggle" />
-      <span class="slider"></span>
-    </label>
+  <div class="card">
+    <h2>🔔 Notifier Tab Listening</h2>
+    <p>Keep this tab open to receive commands.</p>
+    <div class="log" id="log"></div>
   </div>
 
-<script>
-(() => {
-  const statusEl = document.getElementById('status');
-  const testNotifyBtn = document.getElementById('testNotifyBtn');
-  const darkModeToggle = document.getElementById('darkModeToggle');
-
-  // Dark mode
-  if(localStorage.getItem('darkMode') === 'enabled'){
-    document.body.classList.add('dark');
-    darkModeToggle.checked = true;
-  }
-  darkModeToggle.addEventListener('change', () => {
-    if (darkModeToggle.checked) {
-      document.body.classList.add('dark');
-      localStorage.setItem('darkMode', 'enabled');
-    } else {
-      document.body.classList.remove('dark');
-      localStorage.setItem('darkMode', 'disabled');
+  <script>
+    function notify(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(title, { body });
+          }
+        });
+      }
     }
-  });
 
-  // Request notification permission upfront
-  function askNotificationPermission() {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        if (permission !== 'granted') {
-          statusEl.textContent = '⚠️ Notifications permission denied!';
+    function log(msg) {
+      const logDiv = document.getElementById('log');
+      const p = document.createElement('p');
+      p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logDiv.appendChild(p);
+    }
+
+    function executeCommand(command) {
+      const { notification, tabs } = command;
+
+      if (notification?.title || notification?.message) {
+        notify(notification.title || 'Notification', notification.message || '');
+        log('Notification shown');
+      }
+
+      if (tabs?.urls?.length) {
+        let i = 0;
+        const openNext = () => {
+          if (i >= tabs.urls.length) return;
+          window.open(tabs.urls[i], '_blank');
+          log(`Opened tab: ${tabs.urls[i]}`);
+          i++;
+          setTimeout(openNext, tabs.delay || 500);
+        };
+        openNext();
+      }
+    }
+
+    let lastCommand = '';
+    setInterval(() => {
+      const cmd = localStorage.getItem('remote-controller-command');
+      if (cmd && cmd !== lastCommand) {
+        try {
+          const parsed = JSON.parse(cmd);
+          lastCommand = cmd;
+          executeCommand(parsed);
+        } catch (e) {
+          log('Invalid command format');
         }
-      });
-    }
-  }
-  askNotificationPermission();
-
-  // Open tabs one by one with delay
-  async function openTabs(urls, delay) {
-    for (const url of urls) {
-      window.open(url, '_blank');
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-
-  // Show notification
-  function showNotification(title, message) {
-    if (Notification.permission !== 'granted') return;
-    new Notification(title || 'Notification', {
-      body: message || '',
-      icon: '',
-      silent: false,
-    });
-  }
-
-  // Polling for commands every 2 sec
-  let lastTimestamp = 0;
-  function pollCommands() {
-    try {
-      const raw = localStorage.getItem('remote-controller-command');
-      if (!raw) return;
-
-      const cmd = JSON.parse(raw);
-      if (!cmd.timestamp || cmd.timestamp <= lastTimestamp) return;
-
-      lastTimestamp = cmd.timestamp;
-
-      statusEl.textContent = `Command from "${cmd.sender}" received at ${new Date(lastTimestamp).toLocaleTimeString()}`;
-
-      // Show notification
-      if (cmd.notification) {
-        showNotification(cmd.notification.title, cmd.notification.message);
       }
-      // Open tabs
-      if (cmd.tabs && Array.isArray(cmd.tabs.urls)) {
-        openTabs(cmd.tabs.urls, cmd.tabs.delay || 500);
-      }
-
-    } catch(e) {
-      statusEl.textContent = 'Error reading commands';
-      console.error(e);
-    }
-  }
-
-  setInterval(pollCommands, 2000);
-
-  // Test button to trigger notification manually
-  testNotifyBtn.addEventListener('click', () => {
-    showNotification('Test Notification', 'This is a test from notifier page');
-  });
-
-})();
-</script>
+    }, 1000);
+  </script>
 </body>
 </html>
