@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KVN.OS Shell - Enhanced</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for the professional, dark dev theme */
         :root {
@@ -176,7 +176,7 @@
 
 <body oncontextmenu="return false;">
 
-    <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
+        <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
         <div class="text-3xl md:text-4xl font-mono font-semibold text-cyan-400 mb-12 text-center tracking-wider">
             KVN.OS // INITIALIZING SHELL
         </div>
@@ -242,7 +242,7 @@
         // Updated activeWindows to store minimized status
         const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics', isMinimized: false } }
 
-        // --- MUSIC PLAYER STATE (NEW GLOBAL) ---
+        // --- MUSIC PLAYER STATE (NEW GLOBAL) ---
         const musicPlayerState = {
             isPlaying: false,
             currentTime: 0,
@@ -334,11 +334,11 @@
             windowData.element.style.display = 'none'; // Hide it
             windowData.isMinimized = true;
             updateRunningAppsList();
-            
-            // WIDGET HOOK: Show micro-player if music player is minimized
-            if (musicPlayerState.mainInstanceId === instanceId) {
-                showMicroPlayerWidget();
-            }
+            
+            // WIDGET HOOK: Show micro-player if music player is minimized
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                showMicroPlayerWidget();
+            }
         }
 
         // NEW: Restore function (called from taskbar) - HOOKED FOR MUSIC PLAYER WIDGET
@@ -352,10 +352,10 @@
             focusWindow(windowData.element);
             updateRunningAppsList();
 
-            // WIDGET HOOK: Hide micro-player if music player is restored
-            if (musicPlayerState.mainInstanceId === instanceId) {
-                hideMicroPlayerWidget();
-            }
+            // WIDGET HOOK: Hide micro-player if music player is restored
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                hideMicroPlayerWidget();
+            }
         }
 
         // HOOKED FOR MUSIC PLAYER WIDGET
@@ -364,11 +364,11 @@
             if (!windowData) return;
 
             // Stop music playback and hide widget if it's the music player
-            if (musicPlayerState.mainInstanceId === instanceId) {
-                stopPlayback();
-                hideMicroPlayerWidget();
-                musicPlayerState.mainInstanceId = null;
-            }
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                stopPlayback();
+                hideMicroPlayerWidget();
+                musicPlayerState.mainInstanceId = null;
+            }
 
             // Remove window element
             windowData.element.remove();
@@ -588,7 +588,7 @@
                     renderPrettyPrinter(contentEl);
                     break;
                 case 'musicplayer':
-                    renderMusicPlayer(contentEl, instanceId);
+                    renderMusicPlayer(contentEl);
                     break;
                 case 'calculator':
                     renderCalculator(contentEl, instanceId); // Pass instanceId for state isolation
@@ -701,682 +701,759 @@
 
             const usedEl = getMetricEl('metric-heap-used');
             if (usedEl) usedEl.textContent = heapUsed;
-            
-            // >>> FIX APPLIED HERE <<<
+
             const totalEl = getMetricEl('metric-heap-total');
             if (totalEl) totalEl.textContent = heapTotal;
 
-            const limitEl = getMetricEl('metric-heap-limit');
-            if (limitEl) limitEl.textContent = heapLimit;
+            const limitEl = getMetricEl('metric-memory-limit');
+            if (limitEl) limitEl.textContent = `${heapLimit} MB`;
 
             const uptimeEl = getMetricEl('metric-uptime');
             if (uptimeEl) uptimeEl.textContent = uptime;
+            
+            const dnsEl = getMetricEl('metric-dns-lookup');
+            if (dnsEl) dnsEl.textContent = `${dnsMock} ms`;
 
-            const dnsEl = getMetricEl('metric-network-dns');
-            if (dnsEl) dnsEl.textContent = dnsMock;
+            const loadEl = getMetricEl('metric-load-time');
+            if (loadEl) loadEl.textContent = `${loadTimeMock} ms`;
 
-            const loadEl = getMetricEl('metric-page-load');
-            if (loadEl) loadEl.textContent = loadTimeMock;
+            const paintEl = getMetricEl('metric-time-paint');
+            if (paintEl) paintEl.textContent = (performance.getEntriesByName('first-paint')[0]?.startTime || 0).toFixed(2);
 
-            // Browser Info Metrics (Handles potential missing userAgentData)
-            const browserEl = getMetricEl('metric-browser');
-            if (browserEl) {
-                // Fallback to userAgent if userAgentData is not available
-                let browserName = 'N/A';
-                if (navigator.userAgentData) {
-                    browserName = navigator.userAgentData.brands[0]?.brand || 'Unknown';
-                } else if (navigator.userAgent) {
-                    if (navigator.userAgent.indexOf("Chrome") != -1) browserName = "Chrome";
-                    else if (navigator.userAgent.indexOf("Firefox") != -1) browserName = "Firefox";
-                    else if (navigator.userAgent.indexOf("Safari") != -1) browserName = "Safari";
-                    else if (navigator.userAgent.indexOf("MSIE") != -1 || navigator.userAgent.indexOf("Trident") != -1) browserName = "IE/Edge";
-                    else browserName = "Other";
-                }
-                browserEl.textContent = browserName;
+            const originEl = getMetricEl('metric-time-origin');
+            if (originEl) originEl.textContent = OS_START_TIME.toFixed(0);
+
+
+            // 2. Resource Allocation
+            const openWindows = Object.values(activeWindows).length;
+            const totalApps = APPS.length;
+            const windowUsage = Math.min((openWindows / 5) * 100, 100).toFixed(0);
+
+            const windowCountEl = getMetricEl('metric-open-windows');
+            if (windowCountEl) windowCountEl.textContent = openWindows;
+
+            const windowTotalEl = getMetricEl('metric-total-apps');
+            if (windowTotalEl) windowTotalEl.textContent = totalApps;
+
+            const windowUsageFill = getMetricEl('metric-window-usage-fill');
+            if (windowUsageFill) windowUsageFill.style.width = `${windowUsage}%`;
+
+
+            // 3. Client Metadata (Static or less frequent updates)
+            // These are populated on render, so just a placeholder update if needed
+            const batteryLevel = navigator.getBattery ? (await navigator.getBattery()).level : (Math.random() * 0.3 + 0.6).toFixed(2);
+            const batteryEl = getMetricEl('metric-battery-level');
+            if (batteryEl) batteryEl.textContent = `${(batteryLevel * 100).toFixed(0)}%`;
+            
+            const batteryFill = getMetricEl('metric-battery-fill');
+            if (batteryFill) {
+                batteryFill.style.width = `${(batteryLevel * 100).toFixed(0)}%`;
+                batteryFill.style.backgroundColor = batteryLevel < 0.2 ? '#ef4444' : '#4ade80';
             }
-            
-            // Update Progress Bar
-            const heapUsagePercent = (heapUsed / heapLimit) * 100;
-            const progressFillEl = getMetricEl('metric-memory-progress');
-            if (progressFillEl) progressFillEl.style.width = `${heapUsagePercent.toFixed(0)}%`;
+
+            // 4. Task/System Mock
+            const taskProgress = ((Date.now() / 1000) % 100).toFixed(0); // Mock value
+            const taskProgressEl = getMetricEl('metric-task-progress-fill');
+            if (taskProgressEl) taskProgressEl.style.width = `${taskProgress}%`;
+
+            requestAnimationFrame(updateMetrics);
         }
 
         function startMetricsLoop() {
             isMetricsLoopRunning = true;
-            function loop() {
-                if (isMetricsLoopRunning) {
-                    updateMetrics();
-                    requestAnimationFrame(loop);
-                }
+            // Initial population of static metrics
+            const userAgent = navigator.userAgent;
+            let browserName = 'Unknown';
+            let browserVersion = 'N/A';
+            if (userAgent.includes('Chrome')) {
+                browserName = 'Chrome';
+                browserVersion = userAgent.match(/Chrome\/([\d.]+)/)?.[1] || browserVersion;
+            } else if (userAgent.includes('Firefox')) {
+                browserName = 'Firefox';
+                browserVersion = userAgent.match(/Firefox\/([\d.]+)/)?.[1] || browserVersion;
+            } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                browserName = 'Safari';
+                browserVersion = userAgent.match(/Version\/([\d.]+)/)?.[1] || browserVersion;
             }
-            requestAnimationFrame(loop);
+
+            let osName = 'Unknown';
+            let osVersion = 'N/A';
+            const platform = navigator.platform;
+            if (platform.includes('Win')) {
+                osName = 'Windows';
+                osVersion = userAgent.includes('NT 10.0') ? '10/11' : 'Older';
+            } else if (platform.includes('Mac')) {
+                osName = 'macOS';
+                osVersion = userAgent.includes('Mac OS X') ? userAgent.split('Mac OS X ')[1].split(')')[0].replace(/_/g, '.') : 'Older';
+            } else if (platform.includes('Linux')) {
+                osName = 'Linux';
+                osVersion = 'Kernel';
+            } else if (userAgent.includes('Android')) {
+                osName = 'Android';
+            } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+                osName = 'iOS/iPadOS';
+            }
+            
+            const browserEl = getMetricEl('metric-browser-name');
+            if (browserEl) browserEl.textContent = browserName;
+            
+            const versionEl = getMetricEl('metric-browser-version');
+            if (versionEl) versionEl.textContent = browserVersion;
+            
+            const osNameEl = getMetricEl('metric-os-name');
+            if (osNameEl) osNameEl.textContent = osName;
+            
+            const osVersionEl = getMetricEl('metric-os-version');
+            if (osVersionEl) osVersionEl.textContent = osVersion;
+
+            requestAnimationFrame(updateMetrics);
         }
 
         function renderMetricsApp(contentEl) {
+            // ... (Metrics HTML template is extensive but omitted here for focus on new apps)
             contentEl.innerHTML = `
-                <div class="p-6 h-full flex flex-col space-y-6">
-                    <h3 class="text-xl font-bold text-cyan-400 border-b border-gray-700 pb-2">System Health Overview</h3>
+                <main class="h-full w-full overflow-y-auto p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        
+                                                <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-green">PERFORMANCE TELEMETRY (9 Metrics)</h2>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-fps">60</span><span class="text-gray-400 ml-1">FPS</span>
+                                    <div class="metric-label">Frame Rate</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-heap-used">--</span>
+                                    <div class="metric-label">Used JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-heap-total">--</span>
+                                    <div class="metric-label">Total JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-origin">--</span>
+                                    <div class="metric-label">Time Origin (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-paint">--</span>
+                                    <div class="metric-label">First Paint (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-load-time">--</span>
+                                    <div class="metric-label">Load Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-uptime">--</span>
+                                    <div class="metric-label">Time Since Init (App Uptime)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-dns-lookup">--</span>
+                                    <div class="metric-label">DNS Lookup Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="metric-value text-xl" id="metric-memory-limit">--</span>
+                                    <div class="metric-label">Memory Limit (Approx)</div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="grid grid-cols-4 gap-4">
-                                                <div class="metric-card p-3 rounded-lg flex flex-col justify-center">
-                            <div id="metric-fps" class="metric-value text-3xl">--</div>
-                            <div class="metric-label">FPS</div>
+                                                <div class="col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-cyan">CLIENT METADATA (8 Metrics)</h2>
+                            <div class="space-y-3">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Browser / Version</div>
+                                    <span class="metric-value" id="metric-browser-name">--</span> / <span class="metric-value" id="metric-browser-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">OS Name / Version</div>
+                                    <span class="metric-value" id="metric-os-name">--</span> / <span class="metric-value" id="metric-os-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Local Date / UTC Time</div>
+                                    <span class="metric-value" id="metric-date-local">--</span> / <span class="metric-value" id="metric-time-utc">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Timezone</div>
+                                    <span class="metric-value" id="metric-timezone">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Screen Resolution</div>
+                                    <span class="metric-value" id="metric-resolution">${window.innerWidth}x${window.innerHeight}</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">App Windows Open</div>
+                                    <span class="metric-value text-2xl" id="metric-app-count">0</span> / ${APPS.length}
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Connectivity</div>
+                                    <span class="metric-value" id="metric-connection-type">${navigator.connection?.effectiveType || 'wifi'}</span>
+                                </div>
+                                <div class="pb-2">
+                                    <div class="metric-label">Max Threads (Concurrency)</div>
+                                    <span class="metric-value" id="metric-threads">${navigator.hardwareConcurrency || 4}</span>
+                                </div>
+                            </div>
                         </div>
-                                                <div class="metric-card p-3 rounded-lg flex flex-col justify-center col-span-2">
-                            <div id="metric-uptime" class="metric-value text-xl">--</div>
-                            <div class="metric-label">Uptime</div>
-                        </div>
-                                                <div class="metric-card p-3 rounded-lg flex flex-col justify-center">
-                            <div id="metric-app-count" class="metric-value text-3xl">--</div>
-                            <div class="metric-label">Apps Active</div>
+
+                                                <div class="col-span-1 lg:col-span-2 metric-card p-4 rounded-lg flex flex-col justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold mb-3 text-yellow-400">RESOURCE ALLOCATION & STATUS</h2>
+                                
+                                                                <div class="mb-4">
+                                    <div class="metric-label mb-1">Window Resource Usage (Estimated)</div>
+                                    <div class="progress-bar">
+                                        <div id="metric-window-usage-fill" class="progress-bar-fill bg-orange-500" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                                                <div class="mb-4">
+                                    <div class="metric-label mb-1 flex justify-between">
+                                        <span>Battery Level</span>
+                                        <span class="metric-value" id="metric-battery-level">--</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="metric-battery-fill" class="progress-bar-fill" style="width: 0%; background-color: #4ade80;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                                                        <div>
+                                <div class="metric-label mb-1">System Integrity Check (Running)</div>
+                                <div class="progress-bar">
+                                    <div id="metric-task-progress-fill" class="progress-bar-fill bg-cyan-500" style="width: 50%;"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                                        <div class="space-y-3">
-                        <h4 class="text-lg font-semibold text-gray-300">Heap Memory (MB)</h4>
-                        <div class="progress-bar">
-                            <div id="metric-memory-progress" class="progress-bar-fill" style="width: 0%;"></div>
-                        </div>
-                        <div class="flex justify-between font-mono text-sm">
-                            <span>Used: <span id="metric-heap-used" class="text-green-400">0.00</span> MB</span>
-                            <span>Total: <span id="metric-heap-total" class="text-cyan-400">0.00</span> MB</span>
-                            <span>Limit: <span id="metric-heap-limit" class="text-red-400">0</span> MB</span>
-                        </div>
-                    </div>
-
-                                        <h4 class="text-lg font-semibold text-gray-300 pt-2">Detailed Diagnostics</h4>
-                    <div class="bg-gray-800 p-4 rounded-lg overflow-x-auto font-mono text-sm">
-                        <table class="w-full">
-                            <tbody>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">Browser/Engine:</td><td class="py-1 text-cyan-400" id="metric-browser">--</td></tr>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">DNS Lookup (Mock):</td><td class="py-1 text-green-400" id="metric-network-dns">-- ms</td></tr>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">Initial Page Load:</td><td class="py-1 text-green-400" id="metric-page-load">-- ms</td></tr>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">Local Date:</td><td class="py-1" id="metric-date-local">--</td></tr>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">Timezone:</td><td class="py-1" id="metric-timezone">--</td></tr>
-                                <tr class="border-b border-gray-700"><td class="py-1 text-gray-400">Current UTC Time:</td><td class="py-1" id="metric-time-utc">--</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                </main>
             `;
         }
 
-        // --- 2. Java Pretty Printer (Code Formatter) ---
-
-        function formatJavaCode(code) {
-            // Simple indentation logic for demonstration
-            let indent = 0;
-            return code.split('\n').map(line => {
-                line = line.trim();
-                if (line.endsWith('}')) {
-                    indent = Math.max(0, indent - 1);
-                }
-                const paddedLine = '  '.repeat(indent) + line;
-                if (line.endsWith('{')) {
-                    indent++;
-                }
-                return paddedLine;
-            }).join('\n');
-        }
-
-        function renderPrettyPrinter(contentEl) {
-            const initialCode = `public class Main {
-public static void main(String[] args) {
-int x=5;
-if(x>0){
-System.out.println("Hello World!");
-}
-}
-}`;
-            
+        // --- 2. Simple Text Editor (Text Editor Content) ---
+        function renderTextEditor(contentEl) {
             contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <h4 class="text-lg font-semibold text-cyan-400">Input (Ugly Java Code):</h4>
-                    <textarea id="code-input" class="code-input flex-grow" rows="10">${initialCode}</textarea>
-
-                    <div class="flex justify-between items-center">
-                        <button id="format-button" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition duration-200 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10 3a1 1 0 011 1v1h4a1 1 0 110 2h-4v1h5a1 1 0 110 2h-5v1h4a1 1 0 110 2h-4v1a1 1 0 11-2 0v-1h-5a1 1 0 110-2h5v-1h-4a1 1 0 110-2h4v-1h-5a1 1 0 110-2h5V4a1 1 0 011-1z" />
-                            </svg>
-                            <span>Format Code</span>
+                <div class="flex flex-col h-full w-full space-y-3">
+                    <div class="flex space-x-2">
+                        <button onclick="showMessage('Save action triggered. (Mock)')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded text-sm transition duration-150">
+                            Save File
+                        </button>
+                        <button onclick="showMessage('Open action triggered. (Mock)')" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-1 px-3 rounded text-sm transition duration-150">
+                            Open File
                         </button>
                     </div>
+                    <textarea id="text-editor-input" class="code-input flex-grow h-full" placeholder="// Type your notes or code here...\n\nfunction setup() {\n  console.log('Text Editor Initialized');\n}" style="height: calc(100% - 40px);"></textarea>
+                </div>
+            `;
+        }
 
-                    <h4 class="text-lg font-semibold text-gray-300">Output (Pretty Code):</h4>
-                    <textarea id="code-output" class="code-output flex-grow" rows="10" readonly></textarea>
+        // --- 3. Java Pretty Printer (Pretty Printer Content) ---
+        function renderPrettyPrinter(contentEl) {
+            const instanceId = contentEl.parentElement.id;
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full space-y-3">
+                    <textarea id="java-input-${instanceId}" class="code-input h-48" placeholder="Paste unformatted Java code here..."></textarea>
+                    <button id="pretty-print-btn-${instanceId}" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded transition duration-150">
+                        Run Prettifier
+                    </button>
+                    <textarea id="java-output-${instanceId}" class="code-output flex-grow" readonly placeholder="Formatted code output will appear here..."></textarea>
+                </div>
+            `;
+            
+            document.getElementById(`pretty-print-btn-${instanceId}`).onclick = () => {
+                const input = document.getElementById(`java-input-${instanceId}`).value;
+                const outputEl = document.getElementById(`java-output-${instanceId}`);
+                if (input.trim() === '') {
+                    outputEl.value = 'Error: No code provided to format.';
+                    return;
+                }
+                // Mock formatting: simply adds indentation and a header
+                const lines = input.split('\n').map(line => line.trim());
+                let formatted = '/* KVN.OS Prettifier v1.1 */\n';
+                let indentLevel = 0;
+                lines.forEach(line => {
+                    if (line.endsWith('}')) indentLevel = Math.max(0, indentLevel - 1);
+                    const indent = '  '.repeat(indentLevel);
+                    if (line) formatted += indent + line + '\n';
+                    if (line.endsWith('{')) indentLevel++;
+                });
+                outputEl.value = formatted;
+                showMessage('Code formatted successfully. (Mock)');
+            };
+        }
+
+        // --- 4. Music Player (Music Player Content) ---
+
+        // --- MUSIC PLAYER WIDGET LOGIC (NEW) ---
+
+        function createMicroPlayerWidget() {
+            if (musicPlayerState.widgetEl) return; // Widget already exists
+
+            const widget = document.createElement('div');
+            widget.id = 'micro-player-widget';
+            // Small size, high z-index, drag handle, fixed position
+            widget.className = 'fixed top-1/4 right-4 w-56 h-16 bg-gray-900 border border-cyan-500 rounded-lg shadow-2xl p-2 cursor-pointer z-[100] transition-opacity duration-300 opacity-0 hidden';
+            
+            // Widget Content: Track, Play/Pause, Volume, Waveform
+            widget.innerHTML = `
+                <div class="flex items-center h-full" onmousedown="startWidgetDrag(event, this.parentElement)">
+                                        <button id="widget-play-btn" onclick="togglePlayPause('widget')" class="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center transition duration-150 mr-2">
+                        <svg id="widget-play-icon" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>
+                    </button>
+
+                                        <div class="flex-grow min-w-0 mr-2">
+                        <div class="text-xs font-mono truncate text-cyan-400" id="widget-track-name">--</div>
+                        <div class="relative h-3 w-full mt-1">
+                                                        <div class="absolute inset-0 flex items-end space-x-0.5" id="widget-waveform">
+                                ${Array(10).fill().map((_, i) => `<div class="bg-green-500 rounded-full" style="width: 2px; height: ${Math.floor(Math.random() * 8 + 3)}px; opacity: ${0.5 + Math.random() * 0.5};"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                                        <div class="flex-shrink-0 text-sm font-semibold text-gray-300 w-6 text-right" id="widget-volume">${musicPlayerState.volume}%</div>
                 </div>
             `;
 
-            document.getElementById('format-button').addEventListener('click', () => {
-                const input = document.getElementById('code-input').value;
-                const output = formatJavaCode(input);
-                document.getElementById('code-output').value = output;
-            });
-
-            // Run once on load
-            document.getElementById('code-output').value = formatJavaCode(initialCode);
+            document.body.appendChild(widget);
+            musicPlayerState.widgetEl = widget;
+            updateWidgetDisplay();
         }
 
-        // --- 3. Music Player ---
-
-        function formatTime(seconds) {
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${min}:${sec}`;
-        }
-
-        function updateMusicPlayerUI(instanceId) {
-            const windowEl = activeWindows[instanceId]?.element;
-            if (!windowEl) return;
+        function updateWidgetDisplay() {
+            if (!musicPlayerState.widgetEl) return;
             
-            const playBtn = windowEl.querySelector('#play-pause-btn');
-            const timeCurrentEl = windowEl.querySelector('#time-current');
-            const timeTotalEl = windowEl.querySelector('#time-total');
-            const progressRange = windowEl.querySelector('#progress-range');
-
-            if (playBtn) {
-                playBtn.innerHTML = musicPlayerState.isPlaying
-                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1H8a1 1 0 01-1-1V8zm5-1a1 1 0 00-1 1v4a1 1 0 001 1h1a1 1 0 001-1V8a1 1 0 00-1-1h-1z" clip-rule="evenodd" /></svg>`
-                    : `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
+            // Update Play/Pause Icon
+            const playIcon = document.getElementById('widget-play-icon');
+            if (playIcon) {
+                playIcon.innerHTML = musicPlayerState.isPlaying
+                    ? '<path d="M6 5H8V15H6zM12 5H14V15H12z"/>' // Pause
+                    : '<path d="M7 4V16L17 10L7 4Z"/>';      // Play
             }
 
-            if (timeCurrentEl) timeCurrentEl.textContent = formatTime(musicPlayerState.currentTime);
-            if (timeTotalEl) timeTotalEl.textContent = formatTime(musicPlayerState.duration);
-
-            if (progressRange) {
-                progressRange.value = musicPlayerState.currentTime;
-                progressRange.max = musicPlayerState.duration;
-            }
-            
-            const volumeRange = windowEl.querySelector('#volume-range');
-            if (volumeRange) volumeRange.value = musicPlayerState.volume;
-            
-            const volumeValueEl = windowEl.querySelector('#volume-value');
-            if (volumeValueEl) volumeValueEl.textContent = musicPlayerState.volume + '%';
-
-            // Update Widget
-            updateMicroPlayerWidget();
-        }
-
-        function updateMicroPlayerWidget() {
-            const widgetEl = musicPlayerState.widgetEl;
-            if (!widgetEl) return;
-
-            const trackEl = widgetEl.querySelector('#widget-track-name');
-            const timeEl = widgetEl.querySelector('#widget-time');
-            const btn = widgetEl.querySelector('#widget-play-btn');
-
-            if (trackEl) trackEl.textContent = musicPlayerState.trackName;
-            if (timeEl) timeEl.textContent = formatTime(musicPlayerState.currentTime);
-            
-            if (btn) {
-                btn.innerHTML = musicPlayerState.isPlaying
-                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9 8a1 1 0 012 0v4a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>`
-                    : `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>`;
-                btn.classList.toggle('bg-gray-600', !musicPlayerState.isPlaying);
-                btn.classList.toggle('bg-green-600', musicPlayerState.isPlaying);
-            }
-        }
-
-        function startPlayback(instanceId) {
-            if (musicPlayerState.isPlaying) return;
-            musicPlayerState.isPlaying = true;
-
-            const updateLoop = () => {
-                if (!musicPlayerState.isPlaying) {
-                    clearInterval(musicPlayerState.intervalId);
-                    return;
-                }
-                musicPlayerState.currentTime++;
-                if (musicPlayerState.currentTime >= musicPlayerState.duration) {
-                    musicPlayerState.currentTime = 0; // Loop track
-                }
-                updateMusicPlayerUI(instanceId || musicPlayerState.mainInstanceId);
-            };
-
-            musicPlayerState.intervalId = setInterval(updateLoop, 1000);
-            updateMusicPlayerUI(instanceId || musicPlayerState.mainInstanceId);
-        }
-
-        function pausePlayback(instanceId) {
-            if (!musicPlayerState.isPlaying) return;
-            musicPlayerState.isPlaying = false;
-            clearInterval(musicPlayerState.intervalId);
-            updateMusicPlayerUI(instanceId || musicPlayerState.mainInstanceId);
-        }
-
-        function stopPlayback() {
-            pausePlayback();
-            musicPlayerState.currentTime = 0;
-            updateMusicPlayerUI(musicPlayerState.mainInstanceId);
-        }
-
-        function togglePlayPause(instanceId) {
-            if (musicPlayerState.isPlaying) {
-                pausePlayback(instanceId);
-            } else {
-                startPlayback(instanceId);
+            // Update Track Name and Volume
+            const trackNameEl = document.getElementById('widget-track-name');
+            if (trackNameEl) trackNameEl.textContent = musicPlayerState.trackName;
+            
+            const volumeEl = document.getElementById('widget-volume');
+            if (volumeEl) volumeEl.textContent = `${musicPlayerState.volume}%`;
+            
+            // Mock waveform animation: change heights slightly every second
+            const waveformEl = document.getElementById('widget-waveform');
+            if (waveformEl && musicPlayerState.isPlaying) {
+                Array.from(waveformEl.children).forEach(bar => {
+                    bar.style.height = `${Math.floor(Math.random() * 8 + 3)}px`;
+                });
+            } else if (waveformEl) {
+                // Reset to static when paused
+                Array.from(waveformEl.children).forEach(bar => {
+                    bar.style.height = '3px';
+                });
             }
         }
 
         function showMicroPlayerWidget() {
-            if (musicPlayerState.widgetEl) {
-                musicPlayerState.widgetEl.classList.remove('hidden');
-                updateMicroPlayerWidget();
-                return;
+            if (!musicPlayerState.widgetEl) {
+                createMicroPlayerWidget();
             }
-
-            // Create Widget Element
-            const widgetEl = document.createElement('div');
-            widgetEl.id = 'music-widget';
-            widgetEl.className = 'fixed right-4 bottom-16 w-64 bg-gray-900 border border-cyan-500 rounded-lg shadow-2xl p-3 z-40 text-sm cursor-move';
-            widgetEl.innerHTML = `
-                <div class="flex items-center space-x-3" onmousedown="startWidgetDrag(event, this.parentNode)">
-                    <button id="widget-play-btn" onclick="togglePlayPause()" class="w-8 h-8 rounded-full bg-green-600 hover:bg-green-500 text-white flex items-center justify-center transition duration-150"></button>
-                    <div class="flex-grow min-w-0">
-                        <div id="widget-track-name" class="font-semibold truncate text-cyan-400">Track Name</div>
-                        <div id="widget-time" class="text-xs text-gray-400 font-mono">0:00</div>
-                    </div>
-                    <button onclick="restoreWindow('${musicPlayerState.mainInstanceId}')" class="text-gray-400 hover:text-white transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM6.586 7.414A2 2 0 1010 11.828V10a1 1 0 012 0v1.828a2 2 0 103.414-3.414L10 2z" /></svg>
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(widgetEl);
-            musicPlayerState.widgetEl = widgetEl;
-            updateMicroPlayerWidget();
+            // Make sure it's the active window ID before showing
+            if (musicPlayerState.mainInstanceId && activeWindows[musicPlayerState.mainInstanceId].isMinimized) {
+                musicPlayerState.widgetEl.classList.remove('hidden');
+                setTimeout(() => musicPlayerState.widgetEl.classList.remove('opacity-0'), 10);
+            }
         }
 
         function hideMicroPlayerWidget() {
             if (musicPlayerState.widgetEl) {
-                musicPlayerState.widgetEl.classList.add('hidden');
+                musicPlayerState.widgetEl.classList.add('opacity-0');
+                setTimeout(() => musicPlayerState.widgetEl.classList.add('hidden'), 300);
+            }
+        }
+        // --- MUSIC PLAYER CORE FUNCTIONS ---
+
+        function updateMusicDisplay() {
+            const state = musicPlayerState;
+            const mainEl = document.getElementById(`content-${state.mainInstanceId}`);
+            
+            if (mainEl) {
+                const minutes = Math.floor(state.currentTime / 60).toString().padStart(2, '0');
+                const seconds = Math.floor(state.currentTime % 60).toString().padStart(2, '0');
+                
+                // Main Window Updates
+                mainEl.querySelector('#track-name').textContent = state.trackName;
+                mainEl.querySelector('#current-time').textContent = `${minutes}:${seconds}`;
+                mainEl.querySelector('#play-pause-icon').innerHTML = state.isPlaying
+                    ? `<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M6 5H8V15H6zM12 5H14V15H12z"/></svg>`
+                    : `<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>`;
+
+                const progress = (state.currentTime / state.duration) * 100;
+                mainEl.querySelector('#progress-bar-fill-music').style.width = `${progress}%`;
+                mainEl.querySelector('#volume-range').value = state.volume;
+                mainEl.querySelector('#volume-text').textContent = state.volume;
+            }
+
+            // Update Widget Display
+            if (state.widgetEl && !state.widgetEl.classList.contains('hidden')) {
+                updateWidgetDisplay();
             }
         }
 
-        function renderMusicPlayer(contentEl, instanceId) {
-            // Ensure only one main music player window can exist
-            if (musicPlayerState.mainInstanceId) {
-                contentEl.innerHTML = `<p class="text-yellow-500">Music player is already open. Close the existing window to open a new one.</p>`;
-                setTimeout(() => closeWindow(instanceId), 3000);
-                return;
+        function togglePlayPause(source) {
+            const state = musicPlayerState;
+            if (state.isPlaying) {
+                clearInterval(state.intervalId);
+                state.isPlaying = false;
+                showMessage('Playback Paused: System_Theme_Loop_A.wav');
+            } else {
+                state.isPlaying = true;
+                state.intervalId = setInterval(() => {
+                    state.currentTime++;
+                    if (state.currentTime > state.duration) {
+                        state.currentTime = 0; // Loop mock
+                    }
+                    updateMusicDisplay();
+                }, 1000);
+                showMessage('Playback Started: System_Theme_Loop_A.wav');
             }
-            musicPlayerState.mainInstanceId = instanceId;
-            
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center space-y-6 p-4">
-                    <div class="text-8xl text-cyan-500">🎵</div>
-                    <div id="track-name" class="text-xl font-bold text-center">${musicPlayerState.trackName}</div>
+            updateMusicDisplay();
+        }
 
-                                        <div class="w-full">
-                        <input type="range" id="progress-range" min="0" max="${musicPlayerState.duration}" value="${musicPlayerState.currentTime}" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
-                        <div class="flex justify-between text-xs font-mono text-gray-400 mt-1">
-                            <span id="time-current">${formatTime(musicPlayerState.currentTime)}</span>
-                            <span id="time-total">${formatTime(musicPlayerState.duration)}</span>
+        function stopPlayback() {
+            clearInterval(musicPlayerState.intervalId);
+            musicPlayerState.isPlaying = false;
+            musicPlayerState.currentTime = 0;
+            updateMusicDisplay();
+        }
+
+        function setVolume(volume) {
+            musicPlayerState.volume = volume;
+            updateMusicDisplay();
+        }
+
+        function renderMusicPlayer(contentEl) {
+            const instanceId = contentEl.parentElement.id;
+            musicPlayerState.mainInstanceId = instanceId; // Register this instance as the main one
+
+            const totalMinutes = Math.floor(musicPlayerState.duration / 60).toString().padStart(2, '0');
+            const totalSeconds = Math.floor(musicPlayerState.duration % 60).toString().padStart(2, '0');
+
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full w-full space-y-6">
+                                        <div class="flex items-center justify-center h-32 w-32 mx-auto bg-gray-800 rounded-lg border border-cyan-800 p-4">
+                        <svg class="h-20 w-20 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a2 2 0 00-2-2H4a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V3zM9 5h2v6H9V5zm0 8h2v2H9v-2zM6 5h2v6H6V5zm0 8h2v2H6v-2zm8 0h-2v-2h2v2zm0-8h-2v6h2V5z"/></svg>
+                    </div>
+
+                                        <div class="text-center">
+                        <div id="track-name" class="text-xl font-bold text-white">${musicPlayerState.trackName}</div>
+                        <div class="text-gray-400 text-sm">KVN.OS System Artist</div>
+                    </div>
+
+                                        <div class="space-y-1">
+                        <div class="progress-bar">
+                            <div id="progress-bar-fill-music" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 font-mono">
+                            <span id="current-time">00:00</span>
+                            <span>${totalMinutes}:${totalSeconds}</span>
                         </div>
                     </div>
 
-                                        <div class="flex space-x-6 items-center">
-                        <button onclick="stopPlayback()" class="text-gray-400 hover:text-white transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 002 0V8a1 1 0 00-1-1zm3 1a1 1 0 011 1v2a1 1 0 11-2 0V9a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                                        <div class="flex justify-center space-x-6 pt-4">
+                                                <button onclick="showMessage('Previous track (Mock)')" class="text-gray-400 hover:text-cyan-400 transition">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path d="M12.793 4.793a1 1 0 010 1.414L9.414 10l3.379 3.379a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
                         </button>
-                        <button id="play-pause-btn" onclick="togglePlayPause('${instanceId}')" class="text-white bg-cyan-600 hover:bg-cyan-500 p-2 rounded-full shadow-lg transition duration-200">
-                                                    </button>
-                        <button onclick="showMessage('Skipping track...')" class="text-gray-400 hover:text-white transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM13 7a1 1 0 00-1-1h-2a1 1 0 000 2h1.586l-3.293 3.293a1 1 0 001.414 1.414L12 9.414V11a1 1 0 102 0V7z" clip-rule="evenodd" /></svg>
+                        
+                                                <button onclick="togglePlayPause('main')" class="text-white bg-cyan-600 hover:bg-cyan-700 w-12 h-12 rounded-full flex items-center justify-center transition">
+                            <div id="play-pause-icon">
+                                <svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>
+                            </div>
+                        </button>
+                        
+                                                <button onclick="showMessage('Next track (Mock)')" class="text-gray-400 hover:text-cyan-400 transition">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7.207 15.207a1 1 0 010-1.414L10.586 10 7.207 6.621a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
                         </button>
                     </div>
 
-                                        <div class="w-full flex items-center space-x-3 pt-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.037A.75.75 0 008.75 3h-1.393A.25.25 0 007 3.25V4.75a.25.25 0 00.353.228l1.393-.787a.75.75 0 00.654-.228zM7 7.25a.25.25 0 00.353.228l1.393-.787a.75.75 0 00.654-.228zM15 10a5 5 0 11-10 0 5 5 0 0110 0z" clip-rule="evenodd" /></svg>
-                        <input type="range" id="volume-range" min="0" max="100" value="${musicPlayerState.volume}" class="flex-grow h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer range-sm">
-                        <span id="volume-value" class="text-sm font-mono">${musicPlayerState.volume}%</span>
+                                        <div class="flex items-center space-x-3 pt-6">
+                        <svg class="h-5 w-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 20a1 1 0 01-.707-.293l-5-5H2a1 1 0 01-1-1V6a1 1 0 011-1h2.293l5-5A1 1 0 0111 2v16a1 1 0 01-.707.952l-.045.048zM14 8a1 1 0 010 2 3 3 0 010 6 1 1 0 110-2 1 1 0 000-2 1 1 0 010-2zm3-3a1 1 0 010 2 6 6 0 010 10 1 1 0 110-2 4 4 0 000-8 1 1 0 010-2z"/></svg>
+                        <input type="range" id="volume-range" min="0" max="100" value="${musicPlayerState.volume}" oninput="setVolume(this.value)" class="flex-grow h-1 appearance-none bg-gray-600 rounded-lg">
+                        <span id="volume-text" class="text-sm font-mono w-8 text-right">${musicPlayerState.volume}</span>
                     </div>
                 </div>
             `;
-
-            // Setup listeners
-            const volumeRange = contentEl.querySelector('#volume-range');
-            if (volumeRange) {
-                volumeRange.addEventListener('input', (e) => {
-                    musicPlayerState.volume = e.target.value;
-                    updateMusicPlayerUI(instanceId);
-                });
-            }
-
-            const progressRange = contentEl.querySelector('#progress-range');
-            if (progressRange) {
-                progressRange.addEventListener('input', (e) => {
-                    musicPlayerState.currentTime = parseInt(e.target.value);
-                    updateMusicPlayerUI(instanceId);
-                });
-            }
-            
-            // Initial UI update
-            updateMusicPlayerUI(instanceId);
+            updateMusicDisplay();
         }
 
-        // --- 4. Calculator ---
-        const calculatorStates = {}; // { instanceId: { displayValue: '0', operator: null, firstOperand: null, waitingForSecondOperand: false } }
+        // --- 5. Calculator (Calculator Content) ---
+        const calcStates = {}; // Object to hold state for multiple calculator instances
+
+        function initializeCalculatorState(instanceId) {
+            calcStates[instanceId] = {
+                currentInput: '0',
+                operator: null,
+                previousValue: null,
+                waitingForSecondOperand: false,
+                decimalAdded: false
+            };
+        }
 
         function updateCalculatorDisplay(instanceId) {
-            const state = calculatorStates[instanceId];
-            if (!state) return;
-            const displayEl = activeWindows[instanceId].element.querySelector('#calc-display');
-            if (displayEl) displayEl.textContent = state.displayValue;
+            const state = calcStates[instanceId];
+            const displayEl = document.getElementById(`calc-display-${instanceId}`);
+            if (displayEl) {
+                displayEl.textContent = state.currentInput;
+            }
         }
 
-        function inputDigit(instanceId, digit) {
-            const state = calculatorStates[instanceId];
-            const { displayValue, waitingForSecondOperand } = state;
+        function handleCalculatorInput(instanceId, type, value) {
+            const state = calcStates[instanceId];
+            
+            if (type === 'number') {
+                if (state.waitingForSecondOperand) {
+                    state.currentInput = value;
+                    state.waitingForSecondOperand = false;
+                    state.decimalAdded = false;
+                } else {
+                    state.currentInput = state.currentInput === '0' ? value : state.currentInput + value;
+                }
+            } else if (type === 'decimal') {
+                if (!state.decimalAdded) {
+                    if (state.waitingForSecondOperand) {
+                        state.currentInput = '0.';
+                        state.waitingForSecondOperand = false;
+                    } else {
+                        state.currentInput += '.';
+                    }
+                    state.decimalAdded = true;
+                }
+            } else if (type === 'operator') {
+                const inputValue = parseFloat(state.currentInput);
 
-            if (waitingForSecondOperand === true) {
-                state.displayValue = digit;
-                state.waitingForSecondOperand = false;
-            } else {
-                state.displayValue = displayValue === '0' ? digit : displayValue + digit;
+                if (state.previousValue === null) {
+                    state.previousValue = inputValue;
+                } else if (state.operator) {
+                    const result = calculate(state.previousValue, inputValue, state.operator);
+                    state.currentInput = String(result).substring(0, 10); // Limit digits
+                    state.previousValue = result;
+                }
+                
+                state.waitingForSecondOperand = true;
+                state.operator = value;
+                state.decimalAdded = false;
+
+            } else if (type === 'equals') {
+                const inputValue = parseFloat(state.currentInput);
+                if (state.previousValue === null || state.operator === null) return;
+
+                const result = calculate(state.previousValue, inputValue, state.operator);
+                state.currentInput = String(result).substring(0, 10);
+                state.previousValue = null;
+                state.operator = null;
+                state.waitingForSecondOperand = true;
+                state.decimalAdded = state.currentInput.includes('.');
+
+            } else if (type === 'clear') {
+                initializeCalculatorState(instanceId);
             }
+
             updateCalculatorDisplay(instanceId);
         }
 
-        function inputDecimal(instanceId) {
-            const state = calculatorStates[instanceId];
-            if (state.waitingForSecondOperand === true) return;
-
-            if (!state.displayValue.includes('.')) {
-                state.displayValue += '.';
-            }
-            updateCalculatorDisplay(instanceId);
-        }
-
-        function handleOperator(instanceId, nextOperator) {
-            const state = calculatorStates[instanceId];
-            const inputValue = parseFloat(state.displayValue);
-
-            if (state.operator && state.waitingForSecondOperand) {
-                state.operator = nextOperator;
-                return;
-            }
-
-            if (state.firstOperand === null) {
-                state.firstOperand = inputValue;
-            } else if (state.operator) {
-                const result = performCalculation(state.firstOperand, inputValue, state.operator);
-                state.displayValue = String(result);
-                state.firstOperand = result;
-            }
-
-            state.waitingForSecondOperand = true;
-            state.operator = nextOperator;
-            updateCalculatorDisplay(instanceId);
-        }
-
-        function performCalculation(firstOperand, secondOperand, operator) {
+        function calculate(first, second, operator) {
             switch (operator) {
-                case '+': return firstOperand + secondOperand;
-                case '-': return firstOperand - secondOperand;
-                case '*': return firstOperand * secondOperand;
-                case '/': return firstOperand / secondOperand;
-                default: return secondOperand;
+                case '+': return first + second;
+                case '-': return first - second;
+                case '*': return first * second;
+                case '/': return second === 0 ? 'Error' : first / second;
+                default: return second;
             }
-        }
-
-        function resetCalculator(instanceId) {
-            calculatorStates[instanceId] = {
-                displayValue: '0',
-                operator: null,
-                firstOperand: null,
-                waitingForSecondOperand: false,
-            };
-            updateCalculatorDisplay(instanceId);
         }
 
         function renderCalculator(contentEl, instanceId) {
-            // Initialize state for this instance
-            resetCalculator(instanceId);
-            
-            contentEl.classList.remove('p-4');
+            initializeCalculatorState(instanceId);
+
+            const buttons = [
+                { label: 'AC', type: 'clear', class: 'col-span-2 bg-red-600 hover:bg-red-700' },
+                { label: '±', type: 'sign', class: 'calc-button' },
+                { label: '/', type: 'operator', value: '/', class: 'calc-op' },
+                { label: '7', type: 'number', value: '7' },
+                { label: '8', type: 'number', value: '8' },
+                { label: '9', type: 'number', value: '9' },
+                { label: '*', type: 'operator', value: '*', class: 'calc-op' },
+                { label: '4', type: 'number', value: '4' },
+                { label: '5', type: 'number', value: '5' },
+                { label: '6', type: 'number', value: '6' },
+                { label: '-', type: 'operator', value: '-', class: 'calc-op' },
+                { label: '1', type: 'number', value: '1' },
+                { label: '2', type: 'number', value: '2' },
+                { label: '3', type: 'number', value: '3' },
+                { label: '+', type: 'operator', value: '+', class: 'calc-op' },
+                { label: '0', type: 'number', value: '0', class: 'col-span-2' },
+                { label: '.', type: 'decimal', value: '.', class: 'calc-button' },
+                { label: '=', type: 'equals', class: 'calc-eq' }
+            ];
+
+            const buttonHtml = buttons.map(btn => {
+                const defaultClass = btn.type === 'number' || btn.type === 'decimal' ? 'calc-button' : '';
+                return `<button onclick="handleCalculatorInput('${instanceId}', '${btn.type}', '${btn.value || btn.label}')" class="${defaultClass} ${btn.class || ''}">${btn.label}</button>`;
+            }).join('');
+
             contentEl.innerHTML = `
-                <div class="p-4 h-full flex flex-col justify-end">
-                    <div id="calc-display" class="calc-display">0</div>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button class="calc-button bg-red-600 hover:bg-red-700 col-span-2" data-action="clear">AC</button>
-                        <button class="calc-button calc-op" data-action="operator" data-value="/">&divide;</button>
-                        <button class="calc-button calc-op" data-action="operator" data-value="*">&times;</button>
-
-                        <button class="calc-button" data-action="number" data-value="7">7</button>
-                        <button class="calc-button" data-action="number" data-value="8">8</button>
-                        <button class="calc-button" data-action="number" data-value="9">9</button>
-                        <button class="calc-button calc-op" data-action="operator" data-value="-">-</button>
-
-                        <button class="calc-button" data-action="number" data-value="4">4</button>
-                        <button class="calc-button" data-action="number" data-value="5">5</button>
-                        <button class="calc-button" data-action="number" data-value="6">6</button>
-                        <button class="calc-button calc-op" data-action="operator" data-value="+">+</button>
-
-                        <button class="calc-button" data-action="number" data-value="1">1</button>
-                        <button class="calc-button" data-action="number" data-value="2">2</button>
-                        <button class="calc-button" data-action="number" data-value="3">3</button>
-                        <button class="calc-button calc-eq row-span-2" data-action="operator" data-value="=">=</button>
-
-                        <button class="calc-button col-span-2" data-action="number" data-value="0">0</button>
-                        <button class="calc-button" data-action="decimal" data-value=".">.</button>
+                <div class="flex flex-col h-full">
+                    <div id="calc-display-${instanceId}" class="calc-display text-4xl">0</div>
+                    <div class="grid grid-cols-4 gap-2 flex-grow">
+                        ${buttonHtml}
                     </div>
                 </div>
             `;
-
-            contentEl.addEventListener('click', (event) => {
-                if (!event.target.matches('.calc-button')) return;
-                
-                const button = event.target;
-                const action = button.dataset.action;
-                const value = button.dataset.value;
-
-                switch (action) {
-                    case 'number':
-                        inputDigit(instanceId, value);
-                        break;
-                    case 'decimal':
-                        inputDecimal(instanceId);
-                        break;
-                    case 'clear':
-                        resetCalculator(instanceId);
-                        break;
-                    case 'operator':
-                        handleOperator(instanceId, value);
-                        break;
-                }
-            });
+            // Initial display update
+            updateCalculatorDisplay(instanceId);
         }
 
-        // --- 5. To Do List ---
-        const todoLists = {}; // { instanceId: [ { id: 1, text: '...', done: false } ] }
+        // --- 6. To Do List (To Do List Content) ---
+        const todoLists = {};
 
-        function saveToDoList(instanceId) {
-            // Simple mock: in a real app, this would save to localStorage/DB
-            // console.log(`To Do List for ${instanceId} saved.`);
+        function getTodoListState(instanceId) {
+            if (!todoLists[instanceId]) {
+                todoLists[instanceId] = [
+                    { id: 1, text: 'Finalize UI refactor to Tailwind CSS', done: false },
+                    { id: 2, text: 'Implement window dragging logic', done: true },
+                    { id: 3, text: 'Add Micro Player Widget to Music App', done: false },
+                ];
+            }
+            return todoLists[instanceId];
         }
 
-        function drawToDoList(instanceId) {
-            const windowEl = activeWindows[instanceId]?.element;
-            if (!windowEl) return;
-            
-            const listContainer = windowEl.querySelector('#todo-list-items');
-            const list = todoLists[instanceId] || [];
-            listContainer.innerHTML = '';
+        function updateTodoListDOM(instanceId) {
+            const listEl = document.getElementById(`todo-list-${instanceId}`);
+            const tasks = getTodoListState(instanceId);
+            if (!listEl) return;
 
-            list.forEach(item => {
-                const itemEl = document.createElement('div');
-                itemEl.className = `todo-item ${item.done ? 'todo-done' : ''}`;
-                itemEl.id = `todo-${item.id}`;
-                itemEl.innerHTML = `
-                    <div class="todo-text flex-grow mr-4" data-id="${item.id}">${item.text}</div>
-                    <button class="todo-delete-btn" data-id="${item.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" /></svg>
-                    </button>
+            listEl.innerHTML = '';
+            tasks.forEach(task => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `todo-item ${task.done ? 'todo-done' : ''}`;
+                itemDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTodoDone('${instanceId}', ${task.id})" class="h-4 w-4 text-cyan-600 bg-gray-700 border-gray-600 rounded cursor-pointer">
+                        <span class="todo-text">${task.text}</span>
+                    </div>
+                    <button onclick="deleteTodo('${instanceId}', ${task.id})" class="todo-delete-btn text-lg leading-none">&times;</button>
                 `;
-                listContainer.appendChild(itemEl);
+                listEl.appendChild(itemDiv);
             });
-            saveToDoList(instanceId);
         }
 
-        function addToDoItem(instanceId) {
-            const windowEl = activeWindows[instanceId]?.element;
-            if (!windowEl) return;
-            
-            const inputEl = windowEl.querySelector('#new-todo-input');
+        function addTodo(instanceId) {
+            const inputEl = document.getElementById(`todo-input-${instanceId}`);
             const text = inputEl.value.trim();
-
+            
             if (text) {
-                todoLists[instanceId].push({
-                    id: Date.now(),
-                    text: text,
-                    done: false
-                });
+                const tasks = getTodoListState(instanceId);
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                tasks.push({ id: newId, text: text, done: false });
                 inputEl.value = '';
-                drawToDoList(instanceId);
+                updateTodoListDOM(instanceId);
             }
         }
 
-        function toggleToDoItem(instanceId, id) {
-            const item = todoLists[instanceId].find(i => i.id == id);
-            if (item) {
-                item.done = !item.done;
-                drawToDoList(instanceId);
+        function toggleTodoDone(instanceId, id) {
+            const tasks = getTodoListState(instanceId);
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.done = !task.done;
+                updateTodoListDOM(instanceId);
             }
         }
 
-        function deleteToDoItem(instanceId, id) {
-            todoLists[instanceId] = todoLists[instanceId].filter(i => i.id != id);
-            drawToDoList(instanceId);
+        function deleteTodo(instanceId, id) {
+            todoLists[instanceId] = getTodoListState(instanceId).filter(t => t.id !== id);
+            updateTodoListDOM(instanceId);
         }
 
         function renderToDoList(contentEl, instanceId) {
-            // Initialize with a mock list if not already present
-            if (!todoLists[instanceId]) {
-                todoLists[instanceId] = [
-                    { id: 1, text: 'Finalize UI color palette', done: true },
-                    { id: 2, text: 'Implement window resizing logic (stretch goal)', done: false },
-                    { id: 3, text: 'Add placeholder icon for all apps', done: false },
-                ];
-            }
-
             contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <h4 class="text-xl font-bold text-cyan-400">Task Log (Instance: ${instanceId.split('-')[1]})</h4>
-
-                                        <div class="flex space-x-2">
-                        <input type="text" id="new-todo-input" class="flex-grow bg-gray-800 text-white p-2 rounded border border-gray-700 focus:ring-cyan-500 focus:border-cyan-500" placeholder="Add a new task...">
-                        <button id="add-todo-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition duration-200 font-semibold">Add</button>
+                <div class="flex flex-col h-full space-y-4">
+                                        <div class="flex space-x-2 flex-shrink-0">
+                        <input type="text" id="todo-input-${instanceId}" placeholder="New Task..." class="code-input flex-grow text-white" onkeydown="if(event.key === 'Enter') addTodo('${instanceId}')">
+                        <button onclick="addTodo('${instanceId}')" class="bg-accent-green hover:bg-green-600 text-gray-900 font-semibold py-2 px-4 rounded-lg transition duration-150 flex-shrink-0">
+                            Add
+                        </button>
                     </div>
 
-                                        <div id="todo-list-items" class="flex-grow overflow-y-auto pr-2" style="max-height: 100%;">
+                                        <div id="todo-list-${instanceId}" class="flex-grow overflow-y-auto pt-2 space-y-1">
                                             </div>
                 </div>
             `;
-
-            // Setup listeners
-            const addBtn = contentEl.querySelector('#add-todo-btn');
-            addBtn.addEventListener('click', () => addToDoItem(instanceId));
-            
-            const inputEl = contentEl.querySelector('#new-todo-input');
-            inputEl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    addToDoItem(instanceId);
-                }
-            });
-
-            contentEl.querySelector('#todo-list-items').addEventListener('click', (e) => {
-                const id = e.target.dataset.id;
-                if (e.target.closest('.todo-delete-btn')) {
-                    deleteToDoItem(instanceId, id);
-                } else if (e.target.closest('.todo-text')) {
-                    toggleToDoItem(instanceId, id);
-                }
-            });
-            
-            // Draw initial list
-            drawToDoList(instanceId);
+            updateTodoListDOM(instanceId);
         }
 
-        // --- 6. Simple Text Editor (NEW) ---
-        function renderTextEditor(contentEl) {
+        // --- 7. Placeholder App (Default Content) ---
+        function renderPlaceholderApp(contentEl, appName = 'Application') {
             contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <div class="flex space-x-2">
-                        <button onclick="showMessage('Save functionality is mock only.')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded text-sm">Save</button>
-                        <button onclick="showMessage('Open functionality is mock only.')" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded text-sm">Open</button>
-                    </div>
-                    <textarea class="code-input flex-grow" rows="15" placeholder="Start typing your notes or code here..."></textarea>
+                <div class="text-center p-8">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">${appName}</h3>
+                    <p class="text-gray-400 font-mono">
+                        [STATUS] System Module is currently offline.<br>
+                        Future development required to enable full functionality.
+                    </p>
                 </div>
             `;
         }
 
-        // --- 7. Placeholder App Renderer (General Use) ---
-        function renderPlaceholderApp(contentEl, appName) {
-            contentEl.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-center p-8">
-                    <p class="text-3xl text-gray-500 mb-4 font-mono">APP_NOT_FOUND</p>
-                    <p class="text-lg text-gray-400">The <strong>${appName || 'requested'}</strong> application is currently a placeholder.</p>
-                    <p class="text-sm text-gray-500 mt-2">Core services are functional: Metrics, Pretty Printer, Music Player, Calculator, and To Do List are available.</p>
-                </div>
-            `;
-        }
 
-        // --- Initialization ---
-
-        function initShell() {
-            createLauncherMenu();
-            updateTime(); // Initial time setup
-            setInterval(updateTime, 1000); // Start the clock
-            
-            // Autolaunch a couple of apps
-            createWindow(APPS.find(app => app.id === 'metrics'));
-            createWindow(APPS.find(app => app.id === 'calculator'));
-        }
-
-        // --- Boot Sequence Simulation ---
-
-        const bootSteps = [
-            { time: 500, status: "[INFO] System clock synchronized..." },
-            { time: 800, status: "[INIT] Loading core libraries (JS/Tailwind)..." },
-            { time: 1200, status: "[CORE] Initializing Window Manager..." },
-            { time: 1500, status: "[CORE] Establishing Taskbar and Launcher UI..." },
-            { time: 1800, status: "[FS] Checking virtual file integrity..." },
-            { time: 2000, status: "[NET] Pinging API endpoint (127.0.0.1)... Response: 200 OK" },
-            { time: 2400, status: "[TASK] Auto-launching Dev Metrics Hub and Calculator..." },
-            { time: 2700, status: "[SUCCESS] Shell ready. Starting desktop environment..." }
-        ];
-
-        function runBootSequence() {
+        // --- OS INITIALIZATION ---
+        
+        function startOS() {
+            let progress = 0;
             const loadingBar = document.getElementById('loading-bar');
-            const loadingStatus = document.getElementById('loading-status');
-            let stepIndex = 0;
+            const statusText = document.getElementById('loading-status');
+            const bootLog = document.getElementById('boot-log');
 
-            const interval = setInterval(() => {
-                if (stepIndex < bootSteps.length) {
-                    const step = bootSteps[stepIndex];
-                    loadingStatus.textContent = step.status;
-                    loadingBar.style.width = `${((stepIndex + 1) / bootSteps.length) * 90}%`;
-                    stepIndex++;
+            const messages = [
+                "[CORE] Loading system libraries...",
+                "[FS] Checking filesystem integrity...",
+                "[UI] Initializing window manager...",
+                "[NET] Connecting to local network...",
+                "[APPS] Registering application modules...",
+                "[FINISH] Boot sequence complete. Launching shell.",
+            ];
+            
+            let messageIndex = 0;
+
+            function updateBoot() {
+                if (progress < 100) {
+                    progress += (100 - progress) / 15; // Accelerating progress
+                    loadingBar.style.width = `${progress}%`;
+
+                    const targetMessageIndex = Math.floor(progress / 20);
+                    if (targetMessageIndex > messageIndex) {
+                        messageIndex = targetMessageIndex;
+                        if (messages[messageIndex]) {
+                            statusText.textContent = messages[messageIndex];
+                            bootLog.textContent += `\n${messages[messageIndex]}`;
+                        }
+                    }
+                    setTimeout(updateBoot, 100);
                 } else {
-                    clearInterval(interval);
-                    loadingBar.style.width = '100%';
-
+                    loadingScreen.classList.add('opacity-0');
                     setTimeout(() => {
-                        loadingScreen.style.opacity = '0';
-                        setTimeout(() => {
-                            loadingScreen.classList.add('hidden');
-                            osShell.classList.remove('hidden');
-                            initShell();
-                        }, 500); // Wait for fade-out
-                    }, 200); // Wait after 100% complete
+                        loadingScreen.classList.add('hidden');
+                        osShell.classList.remove('hidden');
+                        // Auto-open a useful app on startup
+                        createWindow(APPS.find(app => app.id === 'metrics'));
+                    }, 500); // Wait for fade out
                 }
-            }, 300); // Speed of each step
+            }
+
+            // Start Clock and Launcher Setup
+            setInterval(updateTime, 1000);
+            updateTime();
+            createLauncherMenu();
+
+            // Begin Boot Sequence
+            setTimeout(updateBoot, 500);
         }
 
-        window.onload = runBootSequence;
+        startOS();
 
     </script>
 </body>
