@@ -1,1455 +1,1460 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KVN.OS Shell - Enhanced</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles for the professional, dark dev theme */
-        :root {
-            --primary-bg: #111827; /* Deep Black */
-            --accent-cyan: #06b6d4; /* Vibrant Cyan for highlights */
-            --accent-green: #4ade80; /* Neon Green for status */
-            --text-color: #e5e7eb; /* Off-White for readability */
-            --card-bg: #1e293b; /* Slate 800 for card background */
-            font-family: 'Inter', sans-serif;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KVN.OS Shell - Enhanced</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the professional, dark dev theme */
+        :root {
+            --primary-bg: #111827; /* Deep Black */
+            --accent-cyan: #06b6d4; /* Vibrant Cyan for highlights */
+            --accent-green: #4ade80; /* Neon Green for status */
+            --text-color: #e5e7eb; /* Off-White for readability */
+            --card-bg: #1e293b; /* Slate 800 for card background */
+            font-family: 'Inter', sans-serif;
+        }
 
-        body {
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; 
-            background-color: var(--primary-bg);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        /* 1. KVN.OS WINDOW STYLES */
-        .os-window {
-            position: absolute;
-            background-color: var(--card-bg);
-            border: 1px solid #334155;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-            border-radius: 0.5rem;
-            overflow: hidden;
-            min-width: 300px;
-            min-height: 200px;
-            transition: box-shadow 0.1s;
-        }
-        .os-window.focused {
-            z-index: 50; /* Z-index managed in JS, but a base is needed */
-            box-shadow: 0 0 0 2px var(--accent-cyan);
-        }
-        
-        .window-title-bar {
-            cursor: grab;
-            background-color: #0f172a; /* Darker header */
-            border-bottom: 1px solid #334155;
-        }
-        
-        .window-content {
-            padding: 1rem;
-            height: calc(100% - 40px); /* Adjust for title bar height */
-            overflow: auto;
-        }
-        
-        /* 2. METRICS HUB STYLES */
-        .metric-card {
-            background-color: #1a2333; 
-            border: 1px solid #334155;
-            box-shadow: none; 
-            transition: none;
-        }
-        .metric-value {
-            color: var(--accent-cyan);
-            font-family: 'Consolas', 'Monospace', monospace;
-            font-weight: 700;
-        }
-        .metric-label {
-            color: #94a3b8;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .progress-bar {
-            height: 6px;
-            background-color: #475569;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background-color: var(--accent-green);
-            transition: width 0.3s ease-out;
-        }
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; 
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 1. KVN.OS WINDOW STYLES */
+        .os-window {
+            position: absolute;
+            background-color: var(--card-bg);
+            border: 1px solid #334155;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+            transition: box-shadow 0.1s;
+        }
+        .os-window.focused {
+            z-index: 50; /* Z-index managed in JS, but a base is needed */
+            box-shadow: 0 0 0 2px var(--accent-cyan);
+        }
+        
+        .window-title-bar {
+            cursor: grab;
+            background-color: #0f172a; /* Darker header */
+            border-bottom: 1px solid #334155;
+        }
+        
+        .window-content {
+            padding: 1rem;
+            height: calc(100% - 40px); /* Adjust for title bar height */
+            overflow: auto;
+        }
+        
+        /* 2. METRICS HUB STYLES */
+        .metric-card {
+            background-color: #1a2333; 
+            border: 1px solid #334155;
+            box-shadow: none; 
+            transition: none;
+        }
+        .metric-value {
+            color: var(--accent-cyan);
+            font-family: 'Consolas', 'Monospace', monospace;
+            font-weight: 700;
+        }
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .progress-bar {
+            height: 6px;
+            background-color: #475569;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-green);
+            transition: width 0.3s ease-out;
+        }
 
-        /* 3. LOADING SCREEN STYLES */
-        .loading-bar-inner {
-            background-color: var(--accent-cyan);
-            transition: width 0.18s linear;
-        }
-        .loading-screen-text {
-            font-family: 'Consolas', 'Monospace', monospace;
-            color: #9ca3af;
-        }
-        
-        /* 4. TEXTAREA / CODE STYLES */
-        textarea.code-input, textarea.code-output {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            font-family: 'Consolas', 'Monospace', monospace;
-            font-size: 0.85rem;
-            color: var(--accent-green);
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            resize: none;
-        }
+        /* 3. LOADING SCREEN STYLES */
+        .loading-bar-inner {
+            background-color: var(--accent-cyan);
+            transition: width 0.18s linear;
+        }
+        .loading-screen-text {
+            font-family: 'Consolas', 'Monospace', monospace;
+            color: #9ca3af;
+        }
+        
+        /* 4. TEXTAREA / CODE STYLES */
+        textarea.code-input, textarea.code-output {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            font-family: 'Consolas', 'Monospace', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            resize: none;
+        }
 
-        /* 5. CALCULATOR STYLES */
-        .calc-display {
-            background-color: #000;
-            color: white;
-            padding: 1rem;
-            font-size: 2.5rem;
-            text-align: right;
-            border-radius: 0.25rem;
-            overflow-x: auto;
-            white-space: nowrap;
-            margin-bottom: 0.5rem;
-            height: 70px;
-        }
-        .calc-button {
-            background-color: #334155;
-            color: var(--text-color);
-            padding: 1rem;
-            font-size: 1.25rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            transition: background-color 0.15s;
-        }
-        .calc-button:hover {
-            background-color: #475569;
-        }
-        .calc-op {
-            background-color: #06b6d4; /* Cyan */
-        }
-        .calc-op:hover {
-            background-color: #0891b2;
-        }
-        .calc-eq {
-            background-color: #4ade80; /* Green */
-            color: #0f172a;
-        }
-        .calc-eq:hover {
-            background-color: #22c55e;
-        }
-        
-        /* 6. TODO LIST STYLES */
-        .todo-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #334155;
-        }
-        .todo-text {
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .todo-done .todo-text {
-            text-decoration: line-through;
-            color: #64748b; /* Slate 500 */
-        }
-        .todo-delete-btn {
-            color: #ef4444; /* Red */
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        .todo-delete-btn:hover {
-            opacity: 1;
-        }
-    </style>
+        /* 5. CALCULATOR STYLES */
+        .calc-display {
+            background-color: #000;
+            color: white;
+            padding: 1rem;
+            font-size: 2.5rem;
+            text-align: right;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-bottom: 0.5rem;
+            height: 70px;
+        }
+        .calc-button {
+            background-color: #334155;
+            color: var(--text-color);
+            padding: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: background-color 0.15s;
+        }
+        .calc-button:hover {
+            background-color: #475569;
+        }
+        .calc-op {
+            background-color: #06b6d4; /* Cyan */
+        }
+        .calc-op:hover {
+            background-color: #0891b2;
+        }
+        .calc-eq {
+            background-color: #4ade80; /* Green */
+            color: #0f172a;
+        }
+        .calc-eq:hover {
+            background-color: #22c55e;
+        }
+        
+        /* 6. TODO LIST STYLES */
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        .todo-text {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .todo-done .todo-text {
+            text-decoration: line-through;
+            color: #64748b; /* Slate 500 */
+        }
+        .todo-delete-btn {
+            color: #ef4444; /* Red */
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .todo-delete-btn:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 
 <body oncontextmenu="return false;">
 
-    <!-- 0. Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
-        <div class="text-3xl md:text-4xl font-mono font-semibold text-cyan-400 mb-12 text-center tracking-wider">
-            KVN.OS // INITIALIZING SHELL
-        </div>
-        <div class="w-full max-w-lg bg-gray-800 rounded h-1 border border-gray-700 overflow-hidden">
-            <div id="loading-bar" class="loading-bar-inner h-full" style="width: 0%;"></div>
-        </div>
-        <div id="loading-status" class="mt-8 text-sm font-mono p-2 text-gray-400">
-            [INIT] Initializing system services...
-        </div>
-        <div id="boot-log" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-700 text-xs font-mono opacity-20 whitespace-pre-wrap">
-            Loading kernel v5.18-dev...
-            Mounting root file system...
-        </div>
-    </div>
-    
-    <!-- 1. KVN.OS Shell (Desktop) -->
-    <div id="os-shell" class="flex flex-col flex-grow h-full w-full hidden">
-        
-        <!-- Application Window Container -->
-        <div id="window-container" class="flex-grow relative overflow-hidden">
-            <!-- Windows will be dynamically inserted here -->
-        </div>
+        <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
+        <div class="text-3xl md:text-4xl font-mono font-semibold text-cyan-400 mb-12 text-center tracking-wider">
+            KVN.OS // INITIALIZING SHELL
+        </div>
+        <div class="w-full max-w-lg bg-gray-800 rounded h-1 border border-gray-700 overflow-hidden">
+            <div id="loading-bar" class="loading-bar-inner h-full" style="width: 0%;"></div>
+        </div>
+        <div id="loading-status" class="mt-8 text-sm font-mono p-2 text-gray-400">
+            [INIT] Initializing system services...
+        </div>
+        <div id="boot-log" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-700 text-xs font-mono opacity-20 whitespace-pre-wrap">
+            Loading kernel v5.18-dev...
+            Mounting root file system...
+        </div>
+    </div>
+    
+        <div id="os-shell" class="flex flex-col flex-grow h-full w-full hidden">
+        
+                <div id="window-container" class="flex-grow relative overflow-hidden">
+                    </div>
 
-        <!-- 2. Taskbar / Dock -->
-        <footer id="taskbar" class="flex-shrink-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-sm p-2 shadow-2xl z-50 border-t border-gray-700">
-            <div class="flex justify-between items-center max-w-7xl mx-auto">
-                
-                <!-- Left Side: App Launcher (All 21 Apps) -->
-                <div class="dropdown relative">
-                    <button id="launcher-button" class="taskbar-item bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold flex items-center space-x-2 border border-cyan-700/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Launcher</span>
-                    </button>
+                <footer id="taskbar" class="flex-shrink-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-sm p-2 shadow-2xl z-50 border-t border-gray-700">
+            <div class="flex justify-between items-center max-w-7xl mx-auto">
+                
+                                <div class="dropdown relative">
+                    <button id="launcher-button" class="taskbar-item bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold flex items-center space-x-2 border border-cyan-700/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Launcher</span>
+                    </button>
 
-                    <!-- Dropdown Menu for all 21 apps -->
-                    <div id="app-launcher-menu" class="hidden absolute bottom-full left-0 mb-2 w-64 bg-gray-800 rounded-lg shadow-xl p-2 border border-cyan-700 z-50">
-                        <!-- Content inserted by JS -->
-                    </div>
-                </div>
-                
-                <!-- Center: Running Apps Area -->
-                <div id="running-apps" class="flex space-x-2 mx-4">
-                    <!-- Running App buttons inserted here by JS -->
-                </div>
+                                        <div id="app-launcher-menu" class="hidden absolute bottom-full left-0 mb-2 w-64 bg-gray-800 rounded-lg shadow-xl p-2 border border-cyan-700 z-50">
+                                            </div>
+                </div>
+                
+                                <div id="running-apps" class="flex space-x-2 mx-4">
+                                    </div>
 
-                <!-- Right Side: Clock -->
-                <span id="time-display" class="taskbar-item bg-gray-800 text-sm text-gray-300 px-3 py-1 rounded font-mono"></span>
-            </div>
-        </footer>
-    </div>
+                                <span id="time-display" class="taskbar-item bg-gray-800 text-sm text-gray-300 px-3 py-1 rounded font-mono"></span>
+            </div>
+        </footer>
+    </div>
 
 
-    <!-- Custom Message Box for alerts/system notifications -->
-    <div id="message-box" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 p-6 rounded-lg shadow-2xl z-[100] border-t-2 border-cyan-500 text-center">
-        <p id="message-text" class="text-white mb-4 font-mono"></p>
-        <button onclick="hideMessage()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded font-semibold transition duration-200">Acknowledge</button>
-    </div>
+        <div id="message-box" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 p-6 rounded-lg shadow-2xl z-[100] border-t-2 border-cyan-500 text-center">
+        <p id="message-text" class="text-white mb-4 font-mono"></p>
+        <button onclick="hideMessage()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded font-semibold transition duration-200">Acknowledge</button>
+    </div>
 
-    <script>
-        // --- Globals ---
-        const osShell = document.getElementById('os-shell');
-        const loadingScreen = document.getElementById('loading-screen');
-        const windowContainer = document.getElementById('window-container');
-        const runningAppsContainer = document.getElementById('running-apps');
-        const appLauncherMenu = document.getElementById('app-launcher-menu');
-        const OS_START_TIME = Date.now();
-        
-        let lastFrameTime = performance.now();
-        let frameCount = 0;
-        let zIndexCounter = 10;
-        let isMetricsLoopRunning = false;
-        // Updated activeWindows to store minimized status
-        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics', isMinimized: false } }
+    <script>
+        // --- Globals ---
+        const osShell = document.getElementById('os-shell');
+        const loadingScreen = document.getElementById('loading-screen');
+        const windowContainer = document.getElementById('window-container');
+        const runningAppsContainer = document.getElementById('running-apps');
+        const appLauncherMenu = document.getElementById('app-launcher-menu');
+        const OS_START_TIME = Date.now();
+        
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let zIndexCounter = 10;
+        let isMetricsLoopRunning = false;
+        // Updated activeWindows to store minimized status
+        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics', isMinimized: false } }
 
-        // --- APPS Definition (Reordered working apps to the top) ---
-        const APPS = [
-            { id: 'metrics', name: 'Dev Metrics Hub', icon: '📈', content: 'metrics', width: 900, height: 600, x: 50, y: 50 },
-            { id: 'prettyprint', name: 'Java Pretty Printer', icon: '💻', content: 'prettyprinter', width: 600, height: 450, x: 100, y: 100 },
-            { id: 'music', name: 'Music Player', icon: '🎵', content: 'musicplayer', width: 450, height: 500, x: 150, y: 150 },
-            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'calculator', width: 320, height: 480, x: 200, y: 200 },
-            { id: 'todo', name: 'To Do List', icon: '✅', content: 'todolist', width: 400, height: 550, x: 250, y: 250 },
+        // --- MUSIC PLAYER STATE (NEW GLOBAL) ---
+        const musicPlayerState = {
+            isPlaying: false,
+            currentTime: 0,
+            duration: 180, // Mock 3:00 minutes
+            volume: 75,
+            trackName: "System_Theme_Loop_A.wav",
+            intervalId: null,
+            widgetEl: null, // Holds the micro-player widget element
+            mainInstanceId: null, // Stores the ID of the main Music Player window
+        };
+
+        // --- APPS Definition (Reordered working apps to the top) ---
+        const APPS = [
+            { id: 'metrics', name: 'Dev Metrics Hub', icon: '📈', content: 'metrics', width: 900, height: 600, x: 50, y: 50 },
+            { id: 'prettyprint', name: 'Java Pretty Printer', icon: '💻', content: 'prettyprinter', width: 600, height: 450, x: 100, y: 100 },
+            { id: 'music', name: 'Music Player', icon: '🎵', content: 'musicplayer', width: 450, height: 500, x: 150, y: 150 },
+            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'calculator', width: 320, height: 480, x: 200, y: 200 },
+            { id: 'todo', name: 'To Do List', icon: '✅', content: 'todolist', width: 400, height: 550, x: 250, y: 250 },
+            
+            // Remaining Placeholder Apps
+            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350 },
+            { id: 'calendar', name: 'Calendar', icon: '📅', content: 'placeholder', width: 400, height: 300 },
+            { id: 'settings', name: 'System Settings', icon: '⚙️', content: 'placeholder', width: 450, height: 400 },
+            { id: 'filemgr', name: 'File Manager', icon: '📁', content: 'placeholder', width: 700, height: 500 },
+            { id: 'browser', name: 'Web Browser', icon: '🌐', content: 'placeholder', width: 800, height: 600 },
+            { id: 'chat', name: 'Chat Client', icon: '💬', content: 'placeholder', width: 500, height: 600 },
+            { id: 'paint', name: 'Image Painter', icon: '🎨', content: 'placeholder', width: 700, height: 600 },
+            { id: 'map', name: 'Map Viewer', icon: '🗺️', content: 'placeholder', width: 600, height: 400 },
+            { id: 'terminal', name: 'Legacy Terminal', icon: '📟', content: 'placeholder', width: 650, height: 450 },
+            { id: 'taskmgr', name: 'Task Manager', icon: '🛑', content: 'placeholder', width: 400, height: 550 },
+            { id: 'photo', name: 'Photo Viewer', icon: '🖼️', content: 'placeholder', width: 500, height: 400 },
+            { id: 'debugger', name: 'Code Debugger', icon: '🐞', content: 'placeholder', width: 700, height: 500 },
+            { id: 'network', name: 'Network Monitor', icon: '📡', content: 'placeholder', width: 550, height: 400 },
+            { id: 'logs', name: 'System Logs', icon: '📜', content: 'placeholder', width: 600, height: 400 },
+            { id: 'notes', name: 'Quick Notes', icon: '📌', content: 'placeholder', width: 350, height: 300 },
+            { id: 'games', name: 'Minesweeper', icon: '💣', content: 'placeholder', width: 350, height: 350 },
+        ];
+
+
+        // --- Utility Functions ---
+
+        function showMessage(message) {
+            document.getElementById('message-text').innerHTML = message;
+            document.getElementById('message-box').classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            document.getElementById('message-box').classList.add('hidden');
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const dateString = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+            document.getElementById('time-display').textContent = `${dateString} | ${timeString}`;
+            
+            // Update app count metric (if metrics window is open)
+            if (activeWindows['metrics']) {
+                document.getElementById('metric-time-utc').textContent = now.toUTCString().split(' ')[4];
+                document.getElementById('metric-date-local').textContent = now.toLocaleDateString();
+                document.getElementById('metric-timezone').textContent = now.toLocaleTimeString('en-us',{timeZoneName:'short'}).split(' ')[2];
+                document.getElementById('metric-app-count').textContent = Object.values(activeWindows).filter(w => !w.isMinimized).length;
+            }
+        }
+        
+        // --- OS SHELL: Window Management ---
+
+        function focusWindow(windowEl) {
+            // Check if the element exists and is not minimized
+            if (!windowEl || windowEl.classList.contains('minimized')) return;
+
+            // Unfocus all windows
+            document.querySelectorAll('.os-window').forEach(win => {
+                win.classList.remove('focused');
+            });
+            
+            // Focus the clicked window
+            windowEl.classList.add('focused');
+            zIndexCounter++;
+            windowEl.style.zIndex = zIndexCounter;
+        }
+
+        // NEW: Minimize function - HOOKED FOR MUSIC PLAYER WIDGET
+        function minimizeWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
+
+            windowData.element.classList.add('minimized');
+            windowData.element.style.display = 'none'; // Hide it
+            windowData.isMinimized = true;
+            updateRunningAppsList();
             
-            // Remaining Placeholder Apps
-            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350 },
-            { id: 'calendar', name: 'Calendar', icon: '📅', content: 'placeholder', width: 400, height: 300 },
-            { id: 'settings', name: 'System Settings', icon: '⚙️', content: 'placeholder', width: 450, height: 400 },
-            { id: 'filemgr', name: 'File Manager', icon: '📁', content: 'placeholder', width: 700, height: 500 },
-            { id: 'browser', name: 'Web Browser', icon: '🌐', content: 'placeholder', width: 800, height: 600 },
-            { id: 'chat', name: 'Chat Client', icon: '💬', content: 'placeholder', width: 500, height: 600 },
-            { id: 'paint', name: 'Image Painter', icon: '🎨', content: 'placeholder', width: 700, height: 600 },
-            { id: 'map', name: 'Map Viewer', icon: '🗺️', content: 'placeholder', width: 600, height: 400 },
-            { id: 'terminal', name: 'Legacy Terminal', icon: '📟', content: 'placeholder', width: 650, height: 450 },
-            { id: 'taskmgr', name: 'Task Manager', icon: '🛑', content: 'placeholder', width: 400, height: 550 },
-            { id: 'photo', name: 'Photo Viewer', icon: '🖼️', content: 'placeholder', width: 500, height: 400 },
-            { id: 'debugger', name: 'Code Debugger', icon: '🐞', content: 'placeholder', width: 700, height: 500 },
-            { id: 'network', name: 'Network Monitor', icon: '📡', content: 'placeholder', width: 550, height: 400 },
-            { id: 'logs', name: 'System Logs', icon: '📜', content: 'placeholder', width: 600, height: 400 },
-            { id: 'notes', name: 'Quick Notes', icon: '📌', content: 'placeholder', width: 350, height: 300 },
-            { id: 'games', name: 'Minesweeper', icon: '💣', content: 'placeholder', width: 350, height: 350 },
-        ];
-
-
-        // --- Utility Functions ---
-
-        function showMessage(message) {
-            document.getElementById('message-text').innerHTML = message;
-            document.getElementById('message-box').classList.remove('hidden');
-        }
-
-        function hideMessage() {
-            document.getElementById('message-box').classList.add('hidden');
-        }
-
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            const dateString = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
-            document.getElementById('time-display').textContent = `${dateString} | ${timeString}`;
-            
-            // Update app count metric (if metrics window is open)
-            if (activeWindows['metrics']) {
-                document.getElementById('metric-time-utc').textContent = now.toUTCString().split(' ')[4];
-                document.getElementById('metric-date-local').textContent = now.toLocaleDateString();
-                document.getElementById('metric-timezone').textContent = now.toLocaleTimeString('en-us',{timeZoneName:'short'}).split(' ')[2];
-                document.getElementById('metric-app-count').textContent = Object.values(activeWindows).filter(w => !w.isMinimized).length;
+            // WIDGET HOOK: Show micro-player if music player is minimized
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                showMicroPlayerWidget();
             }
-        }
-        
-        // --- OS SHELL: Window Management ---
+        }
 
-        function focusWindow(windowEl) {
-            // Check if the element exists and is not minimized
-            if (!windowEl || windowEl.classList.contains('minimized')) return;
+        // NEW: Restore function (called from taskbar) - HOOKED FOR MUSIC PLAYER WIDGET
+        function restoreWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
 
-            // Unfocus all windows
-            document.querySelectorAll('.os-window').forEach(win => {
-                win.classList.remove('focused');
-            });
-            
-            // Focus the clicked window
-            windowEl.classList.add('focused');
-            zIndexCounter++;
-            windowEl.style.zIndex = zIndexCounter;
-        }
+            windowData.element.classList.remove('minimized');
+            windowData.element.style.display = 'block'; // Show it
+            windowData.isMinimized = false;
+            focusWindow(windowData.element);
+            updateRunningAppsList();
 
-        // NEW: Minimize function
-        function minimizeWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            windowData.element.classList.add('minimized');
-            windowData.element.style.display = 'none'; // Hide it
-            windowData.isMinimized = true;
-            updateRunningAppsList();
-        }
-
-        // NEW: Restore function (called from taskbar)
-        function restoreWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            windowData.element.classList.remove('minimized');
-            windowData.element.style.display = 'block'; // Show it
-            windowData.isMinimized = false;
-            focusWindow(windowData.element);
-            updateRunningAppsList();
-        }
-
-        function closeWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            // Remove window element
-            windowData.element.remove();
-            
-            // Stop metric loop if it was the metrics app being closed
-            if (windowData.appId === 'metrics' && Object.values(activeWindows).filter(w => w.appId === 'metrics').length === 1) {
-                isMetricsLoopRunning = false;
+            // WIDGET HOOK: Hide micro-player if music player is restored
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                hideMicroPlayerWidget();
             }
-
-            // Remove from active windows
-            delete activeWindows[instanceId];
-            
-            // Update running apps list in taskbar
-            updateRunningAppsList();
-
-            // Find the highest z-index and focus it
-            const remainingWindows = Object.values(activeWindows).map(w => w.element);
-            if (remainingWindows.length > 0) {
-                let maxZIndex = -1;
-                let topWindow = null;
-                remainingWindows.forEach(win => {
-                    if (!win.classList.contains('minimized')) {
-                        const z = parseInt(win.style.zIndex || 0);
-                        if (z > maxZIndex) {
-                            maxZIndex = z;
-                            topWindow = win;
-                        }
-                    }
-                });
-                if (topWindow) focusWindow(topWindow);
-            }
-        }
-
-        function createWindow(appInfo) {
-            // Generate a unique instance ID for this window
-            const instanceId = appInfo.id + '-' + Date.now();
-            
-            // --- 1. Create Window Element ---
-            const windowEl = document.createElement('div');
-            windowEl.id = instanceId;
-            windowEl.className = 'os-window focused';
-            windowEl.style.width = `${appInfo.width}px`;
-            windowEl.style.height = `${appInfo.height}px`;
-            windowEl.style.left = `${appInfo.x || (Math.random() * 100 + 50)}px`;
-            windowEl.style.top = `${appInfo.y || (Math.random() * 100 + 50)}px`;
-
-            // --- 2. Title Bar and Controls ---
-            windowEl.innerHTML = `
-                <div class="window-title-bar p-2 flex justify-between items-center text-sm text-gray-300">
-                    <span class="flex items-center space-x-2">
-                        <span class="text-lg leading-none">${appInfo.icon}</span>
-                        <span class="font-bold">${appInfo.name}</span>
-                    </span>
-                    <div class="flex space-x-1">
-                        <!-- Minimize Button -->
-                        <button onclick="minimizeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center transition duration-150">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
-                        </button>
-                        <!-- Close Button -->
-                        <button onclick="closeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="window-content" id="content-${instanceId}">
-                    <!-- App content inserted here -->
-                </div>
-            `;
-            
-            // --- 3. Dragging Logic ---
-            const titleBar = windowEl.querySelector('.window-title-bar');
-            titleBar.addEventListener('mousedown', (e) => startDrag(e, windowEl));
-            windowEl.addEventListener('mousedown', () => focusWindow(windowEl));
-            
-            // Add to the container and focus
-            windowContainer.appendChild(windowEl);
-            focusWindow(windowEl);
-            
-            // Register and render content
-            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id, isMinimized: false };
-            renderAppContent(instanceId, appInfo.content);
-            updateRunningAppsList();
-        }
-
-        let dragState = { isDragging: false, activeWindow: null, offset: { x: 0, y: 0 } };
-
-        function startDrag(e, windowEl) {
-            e.preventDefault();
-            focusWindow(windowEl);
-            
-            dragState.isDragging = true;
-            dragState.activeWindow = windowEl;
-            dragState.offset.x = e.clientX - windowEl.offsetLeft;
-            dragState.offset.y = e.clientY - windowEl.offsetTop;
-
-            windowEl.style.cursor = 'grabbing';
-            windowEl.querySelector('.window-title-bar').style.cursor = 'grabbing';
-        }
-
-        function drag(e) {
-            if (!dragState.isDragging) return;
-            e.preventDefault();
-
-            const win = dragState.activeWindow;
-            const shellBounds = windowContainer.getBoundingClientRect();
-            
-            let newLeft = e.clientX - dragState.offset.x;
-            let newTop = e.clientY - dragState.offset.y;
-
-            // Boundary checks
-            newLeft = Math.max(0, Math.min(newLeft, shellBounds.width - win.offsetWidth));
-            newTop = Math.max(0, Math.min(newTop, shellBounds.height - win.offsetHeight));
-            
-            win.style.left = `${newLeft}px`;
-            win.style.top = `${newTop}px`;
-        }
-
-        function endDrag() {
-            if (dragState.isDragging) {
-                dragState.activeWindow.style.cursor = 'default';
-                dragState.activeWindow.querySelector('.window-title-bar').style.cursor = 'grab';
-                dragState.isDragging = false;
-                dragState.activeWindow = null;
-            }
-        }
-
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', endDrag);
-
-        // --- OS SHELL: Taskbar/Launcher Management ---
-
-        function toggleLauncherMenu() {
-            appLauncherMenu.classList.toggle('hidden');
-        }
-
-        document.getElementById('launcher-button').addEventListener('click', toggleLauncherMenu);
-        // Hide launcher when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!document.getElementById('launcher-button').contains(e.target) && !appLauncherMenu.contains(e.target)) {
-                appLauncherMenu.classList.add('hidden');
-            }
-        });
-
-        function createLauncherMenu() {
-            APPS.forEach(app => {
-                const button = document.createElement('button');
-                button.className = 'w-full text-left p-2 rounded flex items-center space-x-3 hover:bg-gray-700 transition duration-150';
-                button.innerHTML = `<span class="text-xl">${app.icon}</span> <span>${app.name}</span>`;
-                button.onclick = () => {
-                    createWindow(app);
-                    appLauncherMenu.classList.add('hidden');
-                };
-                appLauncherMenu.appendChild(button);
-            });
-        }
-
-        function updateRunningAppsList() {
-            runningAppsContainer.innerHTML = '';
-            
-            // Group by app ID (in case multiple instances are open)
-            const runningAppInstances = Object.values(activeWindows);
-            const uniqueAppIds = [...new Set(runningAppInstances.map(w => w.appId))];
-            
-            uniqueAppIds.forEach(appId => {
-                const appInfo = APPS.find(app => app.id === appId);
-                const instances = runningAppInstances.filter(w => w.appId === appId);
-                const isMinimized = instances.every(w => w.isMinimized);
-
-                const button = document.createElement('button');
-                
-                // Color change if all instances are minimized
-                const baseClasses = 'taskbar-item px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2';
-                button.className = isMinimized 
-                    ? baseClasses + ' bg-gray-700 hover:bg-gray-600 text-gray-400 border border-gray-500' 
-                    : baseClasses + ' bg-cyan-800 hover:bg-cyan-700 text-white border border-cyan-500';
-
-                button.innerHTML = `<span class="text-lg leading-none">${appInfo.icon}</span><span>${appInfo.name}</span>`;
-                
-                // Clicking running app button restores/focuses
-                button.onclick = () => {
-                    const instancesKeys = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
-                    if (instancesKeys.length > 0) {
-                        const topInstanceKey = instancesKeys.reduce((a, b) => {
-                            const zA = parseInt(activeWindows[a].element.style.zIndex || 0);
-                            const zB = parseInt(activeWindows[b].element.style.zIndex || 0);
-                            return zA > zB ? a : b;
-                        });
-                        
-                        const topWindowData = activeWindows[topInstanceKey];
-                        if (topWindowData.isMinimized) {
-                            restoreWindow(topInstanceKey);
-                        } else {
-                            focusWindow(topWindowData.element);
-                        }
-                    }
-                };
-                runningAppsContainer.appendChild(button);
-            });
-        }
-        
-        // --- APP CONTENT RENDERING ---
-
-        function renderAppContent(instanceId, contentType) {
-            const contentEl = document.getElementById(`content-${instanceId}`);
-            if (!contentEl) return;
-            
-            // Clear content and ensure padding is correct before rendering
-            contentEl.innerHTML = '';
-            contentEl.classList.add('p-4'); 
-
-            switch (contentType) {
-                case 'metrics':
-                    contentEl.classList.remove('p-4'); // Metrics uses its own internal padding
-                    renderMetricsApp(contentEl);
-                    if (!isMetricsLoopRunning) {
-                        startMetricsLoop();
-                    }
-                    break;
-                case 'prettyprinter':
-                    renderPrettyPrinter(contentEl);
-                    break;
-                case 'musicplayer':
-                    renderMusicPlayer(contentEl);
-                    break;
-                case 'calculator':
-                    renderCalculator(contentEl, instanceId); // Pass instanceId for state isolation
-                    break;
-                case 'todolist':
-                    renderToDoList(contentEl, instanceId);
-                    break;
-                case 'texteditor':
-                    renderTextEditor(contentEl);
-                    break;
-                case 'placeholder':
-                default:
-                    renderPlaceholderApp(contentEl, APPS.find(a => a.id === activeWindows[instanceId].appId)?.name);
-                    break;
-            }
-        }
-        
-        // --- 1. Dev Metrics Hub (Metrics Content) ---
-        // (Metric functions are retained for brevity in this block, but are fully present in the final code)
-        
-        function getMetricEl(id) {
-            const windowData = Object.values(activeWindows).find(w => w.appId === 'metrics');
-            if (!windowData) return null;
-            return windowData.element.querySelector(`#${id}`);
-        }
-
-        function renderMetricsApp(contentEl) {
-            // ... (Metrics HTML template is extensive but omitted here for focus on new apps)
-            // The original HTML is complex and remains the same.
-            contentEl.innerHTML = `
-                <main class="h-full w-full overflow-y-auto p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        
-                        <!-- Section 1: Core Performance -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-accent-green">PERFORMANCE TELEMETRY (9 Metrics)</h2>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-2xl" id="metric-fps">60</span><span class="text-gray-400 ml-1">FPS</span>
-                                    <div class="metric-label">Frame Rate</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-2xl" id="metric-heap-used">--</span>
-                                    <div class="metric-label">Used JS Heap (MB)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-heap-total">--</span>
-                                    <div class="metric-label">Total JS Heap (MB)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-time-origin">--</span>
-                                    <div class="metric-label">Time Origin (ms)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-time-paint">--</span>
-                                    <div class="metric-label">First Paint (ms)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-load-time">--</span>
-                                    <div class="metric-label">Load Time (ms, Mock)</div>
-                                </div>
-                                <div class="col-span-2 border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-uptime">--</span>
-                                    <div class="metric-label">Time Since Init (App Uptime)</div>
-                                </div>
-                                <div class="col-span-2 border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-dns-lookup">--</span>
-                                    <div class="metric-label">DNS Lookup Time (ms, Mock)</div>
-                                </div>
-                                <div class="col-span-2">
-                                    <span class="metric-value text-xl" id="metric-memory-limit">--</span>
-                                    <div class="metric-label">Memory Limit (Approx)</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 2: Browser/Client Info -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-accent-cyan">CLIENT METADATA (8 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Browser / Version</div>
-                                    <span class="metric-value" id="metric-browser-name">--</span> / <span class="metric-value" id="metric-browser-version">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">OS Name / Version</div>
-                                    <span class="metric-value" id="metric-os-name">--</span> / <span class="metric-value" id="metric-os-version">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">User Agent (Truncated)</div>
-                                    <span class="metric-value text-xs" id="metric-user-agent">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Language / Online Status</div>
-                                    <span class="metric-value" id="metric-language">--</span> / <span class="metric-value" id="metric-online-status">--</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Cookies Enabled</div>
-                                    <span class="metric-value" id="metric-cookies-enabled">--</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 3: Hardware Status (MOCK) -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-red-400">DEVICE STATUS (MOCK) (10 Metrics)</h2>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Device Model / Arch</div>
-                                    <span class="metric-value" id="metric-device-model">KVN-M7 (Mock)</span> / <span class="metric-value" id="metric-cpu-arch">x86_64</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">CPU Cores (Logical)</div>
-                                    <span class="metric-value" id="metric-cpu-cores">8</span>
-                                </div>
-                                <div class="col-span-2 mb-2">
-                                    <div class="metric-label mb-1 flex justify-between">
-                                        <span>CPU Load</span>
-                                        <span class="metric-value" id="metric-cpu-load-val">45%</span>
-                                    </div>
-                                    <div class="progress-bar"><div id="metric-cpu-load-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Total RAM / Used RAM</div>
-                                    <span class="metric-value" id="metric-total-ram">16 GB</span> / <span class="metric-value" id="metric-used-ram">6.4 GB</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Screen Density (DPR) / Orientation</div>
-                                    <span class="metric-value" id="metric-dpr">--</span> / <span class="metric-value" id="metric-device-orientation">--</span>
-                                </div>
-                                <div class="col-span-2">
-                                    <div class="metric-label mb-1 flex justify-between">
-                                        <span>Battery Level <span class="text-sm" id="metric-battery-status">(-- charged)</span></span>
-                                        <span class="metric-value" id="metric-battery-percent">92%</span>
-                                    </div>
-                                    <div class="progress-bar bg-gray-600"><div id="metric-battery-bar" class="progress-bar-fill" style="width: 92%; background-color: #22c55e;"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Section 4: Display & Viewport -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-cyan-400">DISPLAY METRICS (7 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Screen Resolution</div>
-                                    <span class="metric-value" id="metric-screen-res">-- x --</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Viewport Size</div>
-                                    <span class="metric-value" id="metric-viewport-size">-- x --</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Current Orientation</div>
-                                    <span class="metric-value" id="metric-orientation">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Max Touch Points</div>
-                                    <span class="metric-value" id="metric-max-touch">--</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Color Depth</div>
-                                    <span class="metric-value" id="metric-color-depth">--</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 5: Network Status (Mostly Mock) -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-yellow-400">NETWORK (5 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Connection Type</div>
-                                    <span class="metric-value" id="metric-network-type">WIFI (Mock)</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Downlink Speed (Mbps)</div>
-                                    <span class="metric-value" id="metric-downlink-speed">95.4</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">RTT (Round Trip Time)</div>
-                                    <span class="metric-value" id="metric-rtt">28 ms</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Latency (ms)</div>
-                                    <span class="metric-value" id="metric-latency">14 ms</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Data Saver Mode</div>
-                                    <span class="metric-value" id="metric-connection-mode">Off</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 6: System/Utility (12 Metrics) -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-purple-400">UTILITY & APP STATE (12 Metrics)</h2>
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Current UTC Time</div>
-                                    <span class="metric-value text-xl" id="metric-time-utc">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2 col-span-2">
-                                    <div class="metric-label">Date (Local)</div>
-                                    <span class="metric-value text-xl" id="metric-date-local">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Local Timezone</div>
-                                    <span class="metric-value" id="metric-timezone">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">App Z-Index Counter</div>
-                                    <span class="metric-value" id="metric-z-index">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Running App Count</div>
-                                    <span class="metric-value" id="metric-app-count">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Mouse X Position</div>
-                                    <span class="metric-value" id="metric-mouse-x">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Mouse Y Position</div>
-                                    <span class="metric-value" id="metric-mouse-y">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Random Seed (Mock)</div>
-                                    <span class="metric-value" id="metric-random-seed">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Storage Used (Mock)</div>
-                                    <span class="metric-value" id="metric-storage">34%</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Build Hash (Mock)</div>
-                                    <span class="metric-value text-xs" id="metric-build-hash">a5f8e3d9</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Build Time</div>
-                                    <span class="metric-value text-xs" id="metric-build-time">2025/07/15</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Project Status</div>
-                                    <span class="metric-value text-accent-green" id="metric-project-status">Live</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            `;
-            getClientInfo();
-            getDisplayMetrics();
-            getNetworkMetrics();
-        }
-
-        let cpuLoad = 45; 
-        let usedRAM = 6.4; 
-        let batteryPercent = 92; 
-
-        // Retained Metrics helper functions (getClientInfo, getDisplayMetrics, etc.)
-        function getClientInfo() {
-            const ua = navigator.userAgent;
-            let browser = 'Unknown', version = 'N/A', osName = 'Unknown', osVersion = 'N/A';
-            
-            if (ua.indexOf("Chrome") > -1 && ua.indexOf("Edg") === -1) { browser = "Chrome"; version = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Firefox") > -1) { browser = "Firefox"; version = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) { browser = "Safari"; version = ua.match(/Version\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Edg") > -1) { browser = "Edge"; version = ua.match(/Edg\/([\d.]+)/)?.[1] || 'N/A'; }
-
-            if (ua.indexOf("Win") > -1) { osName = "Windows"; osVersion = ua.match(/Windows NT ([\d.]+)/)?.[1] || '10+'; }
-            else if (ua.indexOf("Mac") > -1) { osName = "macOS"; osVersion = ua.match(/Mac OS X ([\d_.]+)/)?.[1].replace(/_/g, '.') || '10.15+'; }
-            else if (ua.indexOf("Linux") > -1) { osName = "Linux"; osVersion = 'Kernel'; }
-            else if (ua.indexOf("Android") > -1) { osName = "Android"; osVersion = ua.match(/Android ([\d.]+)/)?.[1] || '10+'; }
-            else if (ua.indexOf("like Mac") > -1) { osName = "iOS"; osVersion = ua.match(/OS ([\d_]+)/)?.[1].replace(/_/g, '.') || '15+'; }
-
-            const el = getMetricEl('metric-browser-name');
-            if(el) {
-                getMetricEl('metric-browser-name').textContent = browser;
-                getMetricEl('metric-browser-version').textContent = version;
-                getMetricEl('metric-os-name').textContent = osName;
-                getMetricEl('metric-os-version').textContent = osVersion;
-                getMetricEl('metric-user-agent').textContent = ua.substring(0, 80) + '...';
-                getMetricEl('metric-language').textContent = navigator.language;
-                getMetricEl('metric-cookies-enabled').textContent = navigator.cookieEnabled ? 'True' : 'False';
-                getMetricEl('metric-online-status').textContent = navigator.onLine ? 'Online' : 'Offline';
-            }
-        }
-
-        function getDisplayMetrics() {
-            const el = getMetricEl('metric-screen-res');
-            if(el) {
-                getMetricEl('metric-screen-res').textContent = `${screen.width} x ${screen.height}`;
-                getMetricEl('metric-viewport-size').textContent = `${window.innerWidth} x ${window.innerHeight}`;
-                getMetricEl('metric-orientation').textContent = window.innerWidth > window.innerHeight ? 'Landscape' : 'Portrait';
-                getMetricEl('metric-max-touch').textContent = navigator.maxTouchPoints;
-                getMetricEl('metric-color-depth').textContent = screen.colorDepth + ' bit';
-                getMetricEl('metric-dpr').textContent = window.devicePixelRatio.toFixed(2);
-                getMetricEl('metric-device-orientation').textContent = screen.orientation?.type.split('-')[0] || 'Unknown';
-                getMetricEl('metric-z-index').textContent = zIndexCounter;
-            }
-        }
-
-        function getPerformanceMetrics() {
-            const now = performance.now();
-            
-            if (!getMetricEl('metric-uptime')) return;
-
-            // Uptime (Time Since Init)
-            const seconds = (now / 1000).toFixed(2);
-            getMetricEl('metric-uptime').textContent = `${seconds} s`;
-            
-            // Memory (Approximation from Chrome/Edge)
-            if (window.performance && performance.memory) {
-                const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
-                const total = (performance.memory.totalJSHeapSize / 1048576).toFixed(1);
-                const limit = (performance.memory.jsHeapSizeLimit / 1048576).toFixed(1);
-
-                getMetricEl('metric-heap-used').textContent = used;
-                getMetricEl('metric-heap-total').textContent = total;
-                getMetricEl('metric-memory-limit').textContent = `${limit} MB`;
-            } else {
-                 getMetricEl('metric-heap-used').textContent = 'N/A';
-                 getMetricEl('metric-heap-total').textContent = 'N/A';
-                 getMetricEl('metric-memory-limit').textContent = 'N/A (Hidden by browser)';
-            }
-            
-            const navEntries = performance.getEntriesByType("navigation");
-            if (navEntries.length > 0) {
-                const nav = navEntries[0];
-                const loadTime = nav.loadEventEnd - nav.startTime;
-                getMetricEl('metric-time-origin').textContent = performance.timeOrigin.toFixed(0);
-                getMetricEl('metric-load-time').textContent = `${(loadTime > 0 ? loadTime : 250 + Math.random() * 50).toFixed(0)} ms`;
-                getMetricEl('metric-dns-lookup').textContent = `${(30 + Math.random() * 10).toFixed(0)} ms`;
-            }
-            
-            const paintEntries = performance.getEntriesByName("first-contentful-paint");
-            if (paintEntries.length > 0) {
-                getMetricEl('metric-time-paint').textContent = paintEntries[0].startTime.toFixed(0) + ' ms';
-            } else {
-                getMetricEl('metric-time-paint').textContent = (500 + Math.random() * 200).toFixed(0) + ' ms (Simulated)';
-            }
-        }
-        
-        function getNetworkMetrics() {
-             const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-             if (getMetricEl('metric-network-type')) {
-                if (connection) {
-                    getMetricEl('metric-network-type').textContent = connection.effectiveType ? connection.effectiveType.toUpperCase() : 'WIFI (Simulated)';
-                    getMetricEl('metric-downlink-speed').textContent = connection.downlink ? connection.downlink.toFixed(1) : (90 + Math.random() * 10).toFixed(1);
-                    getMetricEl('metric-rtt').textContent = connection.rtt ? `${connection.rtt} ms` : `${(25 + Math.random() * 10).toFixed(0)} ms`;
-                    getMetricEl('metric-latency').textContent = connection.rtt ? `${(connection.rtt / 2).toFixed(0)} ms` : `${(10 + Math.random() * 5).toFixed(0)} ms`;
-                    getMetricEl('metric-connection-mode').textContent = connection.saveData ? 'On' : 'Off';
-                } else {
-                    getMetricEl('metric-network-type').textContent = 'N/A (Simulated)';
-                    getMetricEl('metric-downlink-speed').textContent = '90.5';
-                    getMetricEl('metric-rtt').textContent = '35 ms';
-                    getMetricEl('metric-latency').textContent = '17 ms';
-                    getMetricEl('metric-connection-mode').textContent = 'Off';
-                }
-             }
-        }
-
-        function updateMockHardware() {
-            if (!getMetricEl('metric-cpu-load-val')) return;
-
-            cpuLoad = Math.min(99, Math.max(10, cpuLoad + (Math.random() - 0.5) * 5));
-            getMetricEl('metric-cpu-load-val').textContent = `${cpuLoad.toFixed(0)}%`;
-            getMetricEl('metric-cpu-load-bar').style.width = `${cpuLoad}%`;
-
-            usedRAM = Math.min(15.5, Math.max(5.0, usedRAM + (Math.random() - 0.5) * 0.1));
-            getMetricEl('metric-used-ram').textContent = `${usedRAM.toFixed(1)} GB`;
-
-            batteryPercent = Math.min(100, Math.max(1, batteryPercent + (Math.random() - 0.5) * 0.2));
-            const batStatus = batteryPercent > 90 ? 'Charged' : (batteryPercent > 20 ? 'Discharging' : 'Critical');
-            const batColor = batteryPercent > 50 ? '#22c55e' : (batteryPercent > 20 ? '#facc15' : '#ef4444');
-            
-            getMetricEl('metric-battery-percent').textContent = `${batteryPercent.toFixed(1)}%`;
-            getMetricEl('metric-battery-status').textContent = `(${batStatus} status)`;
-            getMetricEl('metric-battery-bar').style.width = `${batteryPercent}%`;
-            getMetricEl('metric-battery-bar').style.backgroundColor = batColor;
-            
-            getMetricEl('metric-random-seed').textContent = Math.random().toString(36).substring(2, 8);
-        }
-
-        function updateFPS(now) {
-            if (!getMetricEl('metric-fps')) return;
-
-            frameCount++;
-            const delta = now - lastFrameTime;
-
-            if (delta > 100 || frameCount >= 10) {
-                const fps = (frameCount / delta) * 1000;
-                getMetricEl('metric-fps').textContent = fps.toFixed(1);
-                lastFrameTime = now;
-                frameCount = 0;
-            }
-        }
-        
-        function updateMousePosition(e) {
-            if (getMetricEl('metric-mouse-x')) {
-                getMetricEl('metric-mouse-x').textContent = e.clientX;
-                getMetricEl('metric-mouse-y').textContent = e.clientY;
-            }
-        }
-
-        function metricsLoop(now) {
-            if (isMetricsLoopRunning) {
-                updateFPS(now);
-                getPerformanceMetrics();
-                updateMockHardware(); 
-                getDisplayMetrics(); 
-                requestAnimationFrame(metricsLoop);
-            }
-        }
-
-        function startMetricsLoop() {
-             if (isMetricsLoopRunning) return;
-             isMetricsLoopRunning = true;
-             
-             // Initial load for static info
-             getClientInfo();
-             getNetworkMetrics();
-             
-             window.addEventListener('mousemove', updateMousePosition);
-             requestAnimationFrame(metricsLoop);
-        }
-
-        
-        // --- 2. Java Pretty Printer App ---
-        function prettyPrintJava(code) {
-            // Logic remains the same
-            code = code.replace(/([\(\)\{\}\[\];,=])/g, ' $1 ');
-            code = code.replace(/\s+/g, ' ');
-            code = code.replace(/\s*([,;])\s*/g, '$1');
-            
-            let indent = 0;
-            let result = '';
-            const lines = code.split(/[\r\n]/g).map(line => line.trim()).filter(line => line.length > 0);
-
-            for (const line of lines) {
-                let trimmedLine = line.trim();
-
-                if (trimmedLine.startsWith('}') || trimmedLine.startsWith(']') || trimmedLine.startsWith(')')) {
-                    indent = Math.max(0, indent - 1);
-                }
-
-                result += '    '.repeat(indent) + trimmedLine;
-
-                if (trimmedLine.endsWith('{') || trimmedLine.endsWith('[') || (trimmedLine.endsWith('(') && !trimmedLine.endsWith(';'))) {
-                    indent++;
-                }
-                
-                result += '\n';
-            }
-            
-            return result.replace(/\n\s*\n/g, '\n').trim();
-        }
-        
-        const defaultJavaCode = `
-            public class Test {
-                public static void main( String [ ] args ) {
-                    int x = 10 ;
-                    for (int i=0; i<x; i++)
-                    { System.out.println("i is "+i);
-                    }
-                }
-            }
-        `;
-
-        function renderPrettyPrinter(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-3">
-                    <p class="text-sm text-gray-400">Input unformatted Java code, then click 'Format Code' to apply indentation and spacing rules.</p>
-                    
-                    <div class="grid grid-cols-2 gap-4 flex-grow" style="height: calc(100% - 80px);">
-                        <div class="flex flex-col">
-                            <label class="metric-label mb-1">Raw Input</label>
-                            <textarea id="pp-input" class="code-input flex-grow" placeholder="Paste your Java code here...">${defaultJavaCode.trim()}</textarea>
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="metric-label mb-1">Formatted Output</label>
-                            <textarea id="pp-output" class="code-output flex-grow" readonly placeholder="Formatted code will appear here..."></textarea>
-                        </div>
-                    </div>
-
-                    <button id="pp-format-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                        Format Code
-                    </button>
-                </div>
-            `;
-            
-            const inputEl = contentEl.querySelector('#pp-input');
-            const outputEl = contentEl.querySelector('#pp-output');
-            const formatBtn = contentEl.querySelector('#pp-format-btn');
-
-            const runFormatter = () => {
-                try {
-                    const formattedCode = prettyPrintJava(inputEl.value);
-                    outputEl.value = formattedCode;
-                } catch (error) {
-                    outputEl.value = `Error during formatting: ${error.message}`;
-                }
-            };
-            
-            formatBtn.addEventListener('click', runFormatter);
-            runFormatter();
-        }
-
-        // --- 3. Music Player App (New Functional Content) ---
-        // Default ambient track: Lofi/Chill (royalty-free source)
-        const DEFAULT_YT_ID = 'jfKfPfyJRdk'; 
-
-        function renderMusicPlayer(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <p class="text-sm text-gray-400">Embed a YouTube video ID below. Note: Autoplay may be restricted by your browser.</p>
-
-                    <!-- YouTube Iframe Container (Responsive aspect ratio) -->
-                    <div class="relative w-full" style="padding-top: 56.25%;"> 
-                        <iframe id="youtube-embed" 
-                                class="absolute top-0 left-0 w-full h-full rounded-lg shadow-xl"
-                                src="https://www.youtube.com/embed/${DEFAULT_YT_ID}?autoplay=0&controls=1&mute=0&rel=0" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-
-                    <!-- Input for new URL -->
-                    <div class="flex space-x-2">
-                        <input id="yt-id-input" type="text" value="${DEFAULT_YT_ID}" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-cyan-500" placeholder="Enter YouTube Video ID (e.g., jfKfPfyJRdk)">
-                        <button id="yt-load-btn" class="flex-shrink-0 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                            Load
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500 text-center">Video ID is the string after 'v=' in the URL.</p>
-                </div>
-            `;
-
-            const inputEl = contentEl.querySelector('#yt-id-input');
-            const loadBtn = contentEl.querySelector('#yt-load-btn');
-            const iframe = contentEl.querySelector('#youtube-embed');
-
-            loadBtn.addEventListener('click', () => {
-                const videoId = inputEl.value.trim();
-                if (videoId) {
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&mute=0&rel=0`;
-                } else {
-                    showMessage("Please enter a valid YouTube Video ID.");
-                }
-            });
-        }
-        
-        // --- 4. Calculator App (New Functional Content) ---
-
-        // Local state for the calculator (stored temporarily in a map)
-        const calculatorStates = {}; 
-        
-        function getCalcState(instanceId) {
-            if (!calculatorStates[instanceId]) {
-                calculatorStates[instanceId] = {
-                    display: '0',
-                    currentValue: null,
-                    operator: null,
-                    waitingForNewNumber: true
-                };
-            }
-            return calculatorStates[instanceId];
-        }
-
-        function renderCalculator(contentEl, instanceId) {
-            getCalcState(instanceId); // Initialize state
-
-            contentEl.innerHTML = `
-                <div class="flex flex-col h-full">
-                    <div id="calc-display-${instanceId}" class="calc-display">0</div>
-                    <div class="grid grid-cols-4 gap-2 flex-grow">
-                        <!-- Row 1 -->
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="clear" data-instance="${instanceId}">AC</button>
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="sign" data-instance="${instanceId}">±</button>
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="percent" data-instance="${instanceId}">%</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="/" data-instance="${instanceId}">÷</button>
-                        
-                        <!-- Row 2 -->
-                        <button class="calc-button" data-type="number" data-num="7" data-instance="${instanceId}">7</button>
-                        <button class="calc-button" data-type="number" data-num="8" data-instance="${instanceId}">8</button>
-                        <button class="calc-button" data-type="number" data-num="9" data-instance="${instanceId}">9</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="*" data-instance="${instanceId}">×</button>
-                        
-                        <!-- Row 3 -->
-                        <button class="calc-button" data-type="number" data-num="4" data-instance="${instanceId}">4</button>
-                        <button class="calc-button" data-type="number" data-num="5" data-instance="${instanceId}">5</button>
-                        <button class="calc-button" data-type="number" data-num="6" data-instance="${instanceId}">6</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="-" data-instance="${instanceId}">-</button>
-                        
-                        <!-- Row 4 -->
-                        <button class="calc-button" data-type="number" data-num="1" data-instance="${instanceId}">1</button>
-                        <button class="calc-button" data-type="number" data-num="2" data-instance="${instanceId}">2</button>
-                        <button class="calc-button" data-type="number" data-num="3" data-instance="${instanceId}">3</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="+" data-instance="${instanceId}">+</button>
-                        
-                        <!-- Row 5 -->
-                        <button class="calc-button col-span-2" data-type="number" data-num="0" data-instance="${instanceId}">0</button>
-                        <button class="calc-button" data-type="number" data-num="." data-instance="${instanceId}">.</button>
-                        <button class="calc-button calc-eq" data-type="equals" data-instance="${instanceId}">=</button>
-                    </div>
-                </div>
-            `;
-
-            contentEl.addEventListener('click', (e) => handleCalcClick(e.target));
-        }
-
-        function handleCalcClick(target) {
-            const type = target.dataset.type;
-            const instanceId = target.dataset.instance;
-            if (!type || !instanceId) return;
-
-            const state = getCalcState(instanceId);
-            const displayEl = document.getElementById(`calc-display-${instanceId}`);
-
-            if (type === 'number') {
-                const num = target.dataset.num;
-                if (state.waitingForNewNumber) {
-                    state.display = (num === '.') ? '0.' : num;
-                    state.waitingForNewNumber = false;
-                } else if (num === '.') {
-                    if (!state.display.includes('.')) {
-                        state.display += '.';
-                    }
-                } else {
-                    state.display = state.display === '0' ? num : state.display + num;
-                }
-            } else if (type === 'operator') {
-                if (state.currentValue === null || state.operator === null) {
-                    state.currentValue = parseFloat(state.display);
-                } else if (!state.waitingForNewNumber) {
-                    // Calculate intermediate result
-                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
-                    state.display = state.currentValue.toString();
-                }
-                state.operator = target.dataset.op;
-                state.waitingForNewNumber = true;
-            } else if (type === 'equals') {
-                if (state.currentValue !== null && state.operator !== null && !state.waitingForNewNumber) {
-                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
-                    state.display = state.currentValue.toString();
-                    state.operator = null;
-                    state.waitingForNewNumber = true;
-                }
-            } else if (type === 'clear') {
-                state.display = '0';
-                state.currentValue = null;
-                state.operator = null;
-                state.waitingForNewNumber = true;
-            } else if (type === 'sign') {
-                state.display = (parseFloat(state.display) * -1).toString();
-            } else if (type === 'percent') {
-                state.display = (parseFloat(state.display) / 100).toString();
+        }
+
+        // HOOKED FOR MUSIC PLAYER WIDGET
+        function closeWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
+
+            // Stop music playback and hide widget if it's the music player
+            if (musicPlayerState.mainInstanceId === instanceId) {
+                stopPlayback();
+                hideMicroPlayerWidget();
+                musicPlayerState.mainInstanceId = null;
             }
 
-            displayEl.textContent = state.display;
-        }
+            // Remove window element
+            windowData.element.remove();
+            
+            // Stop metric loop if it was the metrics app being closed
+            if (windowData.appId === 'metrics' && Object.values(activeWindows).filter(w => w.appId === 'metrics').length === 1) {
+                isMetricsLoopRunning = false;
+            }
 
-        function performCalculation(val1, val2, op) {
-            val1 = parseFloat(val1);
-            val2 = parseFloat(val2);
-            switch (op) {
-                case '+': return val1 + val2;
-                case '-': return val1 - val2;
-                case '*': return val1 * val2;
-                case '/': return val1 / val2;
-                default: return val2;
-            }
-        }
+            // Remove from active windows
+            delete activeWindows[instanceId];
+            
+            // Update running apps list in taskbar
+            updateRunningAppsList();
 
-        // --- 5. To Do List App (New Functional Content) ---
+            // Find the highest z-index and focus it
+            const remainingWindows = Object.values(activeWindows).map(w => w.element);
+            if (remainingWindows.length > 0) {
+                let maxZIndex = -1;
+                let topWindow = null;
+                remainingWindows.forEach(win => {
+                    if (!win.classList.contains('minimized')) {
+                        const z = parseInt(win.style.zIndex || 0);
+                        if (z > maxZIndex) {
+                            maxZIndex = z;
+                            topWindow = win;
+                        }
+                    }
+                });
+                if (topWindow) focusWindow(topWindow);
+            }
+        }
 
-        const todoStates = {}; // { instanceId: [ { text: '...', done: false } ] }
+        function createWindow(appInfo) {
+            // Generate a unique instance ID for this window
+            const instanceId = appInfo.id + '-' + Date.now();
+            
+            // --- 1. Create Window Element ---
+            const windowEl = document.createElement('div');
+            windowEl.id = instanceId;
+            windowEl.className = 'os-window focused';
+            windowEl.style.width = `${appInfo.width}px`;
+            windowEl.style.height = `${appInfo.height}px`;
+            windowEl.style.left = `${appInfo.x || (Math.random() * 100 + 50)}px`;
+            windowEl.style.top = `${appInfo.y || (Math.random() * 100 + 50)}px`;
 
-        function getTodoState(instanceId) {
-            if (!todoStates[instanceId]) {
-                todoStates[instanceId] = [
-                    { id: Date.now() + 1, text: 'Check out the Dev Metrics Hub 📈', done: false },
-                    { id: Date.now() + 2, text: 'Test the new Calculator 🧮', done: false },
-                    { id: Date.now() + 3, text: 'Try embedding a new YouTube music ID', done: true },
-                ];
-            }
-            return todoStates[instanceId];
-        }
+            // --- 2. Title Bar and Controls ---
+            windowEl.innerHTML = `
+                <div class="window-title-bar p-2 flex justify-between items-center text-sm text-gray-300">
+                    <span class="flex items-center space-x-2">
+                        <span class="text-lg leading-none">${appInfo.icon}</span>
+                        <span class="font-bold">${appInfo.name}</span>
+                    </span>
+                    <div class="flex space-x-1">
+                                                <button onclick="minimizeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center transition duration-150">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
+                        </button>
+                                                <button onclick="closeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="window-content" id="content-${instanceId}">
+                                    </div>
+            `;
+            
+            // --- 3. Dragging Logic ---
+            const titleBar = windowEl.querySelector('.window-title-bar');
+            titleBar.addEventListener('mousedown', (e) => startDrag(e, windowEl));
+            windowEl.addEventListener('mousedown', () => focusWindow(windowEl));
+            
+            // Add to the container and focus
+            windowContainer.appendChild(windowEl);
+            focusWindow(windowEl);
+            
+            // Register and render content
+            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id, isMinimized: false };
+            renderAppContent(instanceId, appInfo.content);
+            updateRunningAppsList();
+        }
 
-        function renderToDoList(contentEl, instanceId) {
-            const state = getTodoState(instanceId);
+        let dragState = { isDragging: false, activeWindow: null, offset: { x: 0, y: 0 } };
 
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <p class="text-sm text-gray-400">Manage your quick development tasks.</p>
+        function startDrag(e, windowEl) {
+            e.preventDefault();
+            focusWindow(windowEl);
+            
+            dragState.isDragging = true;
+            dragState.activeWindow = windowEl;
+            dragState.offset.x = e.clientX - windowEl.offsetLeft;
+            dragState.offset.y = e.clientY - windowEl.offsetTop;
 
-                    <!-- Input Area -->
-                    <div class="flex space-x-2 flex-shrink-0">
-                        <input id="todo-input-${instanceId}" type="text" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-green-500" placeholder="New task...">
-                        <button id="todo-add-btn-${instanceId}" class="flex-shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                            Add
-                        </button>
-                    </div>
+            windowEl.style.cursor = 'grabbing';
+            windowEl.querySelector('.window-title-bar').style.cursor = 'grabbing';
+        }
 
-                    <!-- To Do List -->
-                    <div id="todo-list-${instanceId}" class="flex-grow overflow-y-auto">
-                        <!-- Items inserted here -->
-                    </div>
-                </div>
-            `;
-            
-            const inputEl = contentEl.querySelector(`#todo-input-${instanceId}`);
-            const listEl = contentEl.querySelector(`#todo-list-${instanceId}`);
-            
-            const renderList = () => {
-                listEl.innerHTML = state.map(item => `
-                    <div class="todo-item ${item.done ? 'todo-done' : ''}" data-id="${item.id}">
-                        <span class="todo-text flex-grow">${item.text}</span>
-                        <button class="todo-delete-btn" data-action="delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                `).join('');
-            };
+        function drag(e) {
+            if (!dragState.isDragging) return;
+            e.preventDefault();
 
-            const addTask = () => {
-                const text = inputEl.value.trim();
-                if (text) {
-                    state.push({ id: Date.now(), text, done: false });
-                    inputEl.value = '';
-                    renderList();
-                }
-            };
-            
-            contentEl.querySelector(`#todo-add-btn-${instanceId}`).addEventListener('click', addTask);
-            inputEl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addTask();
-            });
+            const win = dragState.activeWindow;
+            const shellBounds = windowContainer.getBoundingClientRect();
+            
+            let newLeft = e.clientX - dragState.offset.x;
+            let newTop = e.clientY - dragState.offset.y;
 
-            listEl.addEventListener('click', (e) => {
-                const itemEl = e.target.closest('.todo-item');
-                const actionBtn = e.target.closest('[data-action="delete"]');
-                if (!itemEl) return;
-                
-                const id = parseInt(itemEl.dataset.id);
-                const index = state.findIndex(item => item.id === id);
+            // Boundary checks
+            newLeft = Math.max(0, Math.min(newLeft, shellBounds.width - win.offsetWidth));
+            newTop = Math.max(0, Math.min(newTop, shellBounds.height - win.offsetHeight));
+            
+            win.style.left = `${newLeft}px`;
+            win.style.top = `${newTop}px`;
+        }
 
-                if (actionBtn) {
-                    // Delete action
-                    state.splice(index, 1);
-                } else {
-                    // Toggle done status
-                    state[index].done = !state[index].done;
-                }
-                renderList();
-            });
+        function endDrag() {
+            if (dragState.isDragging) {
+                dragState.activeWindow.style.cursor = 'default';
+                dragState.activeWindow.querySelector('.window-title-bar').style.cursor = 'grab';
+                dragState.isDragging = false;
+                dragState.activeWindow = null;
+            }
+        }
 
-            renderList();
-        }
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
 
-        // --- 6. Simple Text Editor App ---
-        function renderTextEditor(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-3">
-                    <p class="text-sm text-gray-400">This is a simple text editor for quick notes. All content is lost when the app closes (persistence not enabled).</p>
-                    <textarea id="text-editor-area" class="code-input flex-grow h-full" placeholder="Start typing your notes here..."></textarea>
-                    
-                    <div class="flex justify-between items-center text-xs text-gray-500">
-                        <span id="char-count">0 Characters | 0 Words</span>
-                        <button onclick="document.getElementById('text-editor-area').value=''" class="text-red-400 hover:text-red-500 transition duration-150">Clear Document</button>
-                    </div>
-                </div>
-            `;
-            
-            const textarea = contentEl.querySelector('#text-editor-area');
-            const countDisplay = contentEl.querySelector('#char-count');
-            
-            const updateCount = () => {
-                const text = textarea.value;
-                const charCount = text.length;
-                const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-                countDisplay.textContent = `${charCount} Characters | ${wordCount} Words`;
-            };
-            
-            textarea.addEventListener('input', updateCount);
-            updateCount(); // Initial count
-        }
-        
-        // --- 7. Placeholder App ---
-        function renderPlaceholderApp(contentEl, appName) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center p-8 text-center space-y-4">
-                    <div class="text-6xl text-cyan-400">🚧</div>
-                    <h2 class="text-2xl font-bold text-gray-200">${appName} v1.0</h2>
-                    <p class="text-gray-400">This application is currently under development. Its shell functions correctly within KVN.OS, but the main feature set is not yet implemented.</p>
-                    <p class="text-sm text-gray-500 font-mono">Status: Awaiting Kernel API integration...</p>
-                </div>
-            `;
-        }
+        // --- OS SHELL: Taskbar/Launcher Management ---
+
+        function toggleLauncherMenu() {
+            appLauncherMenu.classList.toggle('hidden');
+        }
+
+        document.getElementById('launcher-button').addEventListener('click', toggleLauncherMenu);
+        // Hide launcher when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('launcher-button').contains(e.target) && !appLauncherMenu.contains(e.target)) {
+                appLauncherMenu.classList.add('hidden');
+            }
+        });
+
+        function createLauncherMenu() {
+            APPS.forEach(app => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-2 rounded flex items-center space-x-3 hover:bg-gray-700 transition duration-150';
+                button.innerHTML = `<span class="text-xl">${app.icon}</span> <span>${app.name}</span>`;
+                button.onclick = () => {
+                    createWindow(app);
+                    appLauncherMenu.classList.add('hidden');
+                };
+                appLauncherMenu.appendChild(button);
+            });
+        }
+
+        function updateRunningAppsList() {
+            runningAppsContainer.innerHTML = '';
+            
+            // Group by app ID (in case multiple instances are open)
+            const runningAppInstances = Object.values(activeWindows);
+            const uniqueAppIds = [...new Set(runningAppInstances.map(w => w.appId))];
+            
+            uniqueAppIds.forEach(appId => {
+                const appInfo = APPS.find(app => app.id === appId);
+                const instances = runningAppInstances.filter(w => w.appId === appId);
+                const isMinimized = instances.every(w => w.isMinimized);
+
+                const button = document.createElement('button');
+                
+                // Color change if all instances are minimized
+                const baseClasses = 'taskbar-item px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2';
+                button.className = isMinimized 
+                    ? baseClasses + ' bg-gray-700 hover:bg-gray-600 text-gray-400 border border-gray-500' 
+                    : baseClasses + ' bg-cyan-800 hover:bg-cyan-700 text-white border border-cyan-500';
+
+                button.innerHTML = `<span class="text-lg leading-none">${appInfo.icon}</span><span>${appInfo.name}</span>`;
+                
+                // Clicking running app button restores/focuses
+                button.onclick = () => {
+                    const instancesKeys = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
+                    if (instancesKeys.length > 0) {
+                        const topInstanceKey = instancesKeys.reduce((a, b) => {
+                            const zA = parseInt(activeWindows[a].element.style.zIndex || 0);
+                            const zB = parseInt(activeWindows[b].element.style.zIndex || 0);
+                            return zA > zB ? a : b;
+                        });
+                        
+                        const topWindowData = activeWindows[topInstanceKey];
+                        if (topWindowData.isMinimized) {
+                            restoreWindow(topInstanceKey);
+                        } else {
+                            focusWindow(topWindowData.element);
+                        }
+                    }
+                };
+                runningAppsContainer.appendChild(button);
+            });
+        }
+        
+        // --- APP CONTENT RENDERING ---
+
+        function renderAppContent(instanceId, contentType) {
+            const contentEl = document.getElementById(`content-${instanceId}`);
+            if (!contentEl) return;
+            
+            // Clear content and ensure padding is correct before rendering
+            contentEl.innerHTML = '';
+            contentEl.classList.add('p-4'); 
+
+            switch (contentType) {
+                case 'metrics':
+                    contentEl.classList.remove('p-4'); // Metrics uses its own internal padding
+                    renderMetricsApp(contentEl);
+                    if (!isMetricsLoopRunning) {
+                        startMetricsLoop();
+                    }
+                    break;
+                case 'prettyprinter':
+                    renderPrettyPrinter(contentEl);
+                    break;
+                case 'musicplayer':
+                    renderMusicPlayer(contentEl);
+                    break;
+                case 'calculator':
+                    renderCalculator(contentEl, instanceId); // Pass instanceId for state isolation
+                    break;
+                case 'todolist':
+                    renderToDoList(contentEl, instanceId);
+                    break;
+                case 'texteditor':
+                    renderTextEditor(contentEl);
+                    break;
+                case 'placeholder':
+                default:
+                    renderPlaceholderApp(contentEl, APPS.find(a => a.id === activeWindows[instanceId].appId)?.name);
+                    break;
+            }
+        }
+        
+        // --- WIDGET DRAG LOGIC (NEW) ---
+        let widgetDragState = { isDragging: false, offset: { x: 0, y: 0 }, widgetEl: null };
+
+        function startWidgetDrag(e, widgetEl) {
+            e.preventDefault();
+            // Only drag if the click is on the main widget body (not the button)
+            if (e.target.closest('#widget-play-btn') === null) {
+                widgetDragState.isDragging = true;
+                widgetDragState.widgetEl = widgetEl;
+                const rect = widgetEl.getBoundingClientRect();
+                widgetDragState.offset.x = e.clientX - rect.left;
+                widgetDragState.offset.y = e.clientY - rect.top;
+
+                // Attach listeners to the document to allow dragging outside the widget
+                document.addEventListener('mousemove', dragWidget);
+                document.addEventListener('mouseup', endWidgetDrag);
+            }
+        }
+
+        function dragWidget(e) {
+            if (!widgetDragState.isDragging) return;
+            e.preventDefault();
+            
+            const widgetEl = widgetDragState.widgetEl;
+            const offset = widgetDragState.offset;
+            const maxX = window.innerWidth - widgetEl.offsetWidth;
+            const maxY = window.innerHeight - widgetEl.offsetHeight - 50; // Above taskbar
+
+            // Calculate new position and clamp to viewport edges
+            let newX = Math.min(Math.max(0, e.clientX - offset.x), maxX);
+            let newY = Math.min(Math.max(0, e.clientY - offset.y), maxY);
+
+            // Apply new coordinates
+            widgetEl.style.position = 'fixed';
+            widgetEl.style.right = 'auto';
+            widgetEl.style.top = 'auto';
+
+            widgetEl.style.left = `${newX}px`;
+            widgetEl.style.top = `${newY}px`;
+        }
+
+        function endWidgetDrag() {
+            if (widgetDragState.isDragging) {
+                widgetDragState.isDragging = false;
+                document.removeEventListener('mousemove', dragWidget);
+                document.removeEventListener('mouseup', endWidgetDrag);
+            }
+        }
 
 
-        // --- Loading Screen Logic (Remains) ---
+        // --- 1. Dev Metrics Hub (Metrics Content) ---
+        
+        function getMetricEl(id) {
+            const windowData = Object.values(activeWindows).find(w => w.appId === 'metrics');
+            if (!windowData) return null;
+            return windowData.element.querySelector(`#${id}`);
+        }
+        // (Helper functions for metrics loop retained for brevity)
+        function formatUptime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const days = Math.floor(totalSeconds / (3600 * 24));
+            const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${days.toString().padStart(2, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+        }
 
-        const loadingMessages = [
-            "[INIT] System services starting (PID 1)...", 
-            "[KERN] Mapping virtual file system to /dev/vda1...",
-            "[MOD] Loading core modules: UI, PERF, CLIENT, WINDOW_MGR...",
-            "[NET] Starting network interface (eth0)...",
-            "[PERF] Calibrating performance counters...",
-            "[UI] Initializing app launcher (21 items)...", 
-            "[DSP] Configuring display server (Xorg 7.7)...",
-            "[WM] Starting window manager (KWM)...",
-            "[AUTH] Executing user initialization script...",
-            "[CONF] Applying system wide policies.",
-            "[PROC] Spawning metric collector daemon...",
-            "[MEM] Memory management initialized.",
-            "[SYS] Clock source synchronized.",
-            "[UI] Loading core assets (1/3)...", 
-            "[UI] Loading core assets (2/3)...",
-            "[UI] Loading core assets (3/3)...",
-            "[DEV] Loading environment variables.",
-            "[LOG] System log audit complete.",
-            "[NET] Testing connection (8.8.8.8)... OK.", 
-            "[BOOT] System integrity check passed. Complete." 
-        ];
+        function updateMetrics() {
+            if (!isMetricsLoopRunning) return;
+            
+            const now = performance.now();
+            const frameTime = now - lastFrameTime;
+            lastFrameTime = now;
+            frameCount++;
 
-        window.onload = () => {
-            setInterval(updateTime, 1000);
-            createLauncherMenu(); // Build the app list immediately
-            startLoadingScreen();
-        };
+            // 1. Performance Metrics
+            const fps = Math.round(1000 / frameTime);
+            const uptime = formatUptime(Date.now() - OS_START_TIME);
+            
+            let memoryInfo = {};
+            if (window.performance && window.performance.memory) {
+                memoryInfo = window.performance.memory;
+            }
+            const heapUsed = (memoryInfo.usedJSHeapSize / 1048576 || 0).toFixed(2);
+            const heapTotal = (memoryInfo.totalJSHeapSize / 1048576 || 0).toFixed(2);
+            const heapLimit = (memoryInfo.jsHeapSizeLimit / 1048576 || 0).toFixed(0);
 
-        function startLoadingScreen() {
-            const bar = document.getElementById('loading-bar');
-            const status = document.getElementById('loading-status');
-            const bootLog = document.getElementById('boot-log');
-            const totalStages = loadingMessages.length;
-            const stageDuration = 100; 
+            const dnsMock = (Math.random() * 50 + 5).toFixed(1);
+            const loadTimeMock = (now + Math.random() * 500).toFixed(0); // Mocking initial load time
 
-            let currentStage = 0;
+            const fpsEl = getMetricEl('metric-fps');
+            if (fpsEl) fpsEl.textContent = Math.min(fps, 60);
 
-            const loadInterval = setInterval(() => {
-                if (currentStage < totalStages) {
-                    status.textContent = loadingMessages[currentStage];
-                    bootLog.textContent += `\n${loadingMessages[currentStage]}`;
-                    const targetWidth = ((currentStage + 1) / totalStages) * 100;
-                    bar.style.width = `${targetWidth}%`;
-                    currentStage++;
-                } else {
-                    clearInterval(loadInterval);
-                    transitionToDesktop();
-                    
-                    // Launch the Metrics Hub as the initial application
-                    const metricsAppInfo = APPS.find(a => a.id === 'metrics');
-                    if (metricsAppInfo) {
-                        setTimeout(() => {
-                            createWindow(metricsAppInfo);
-                        }, 600);
-                    }
-                }
-            }, stageDuration);
-        }
+            const usedEl = getMetricEl('metric-heap-used');
+            if (usedEl) usedEl.textContent = heapUsed;
 
-        function transitionToDesktop() {
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => {
-                    loadingScreen.classList.add('hidden');
-                    osShell.classList.remove('hidden');
-                }, 500); 
-            }, 300);
-        }
+            const totalEl = getMetricEl('metric-heap-total');
+            if (totalEl) totalEl.textContent = heapTotal;
 
-    </script>
+            const limitEl = getMetricEl('metric-memory-limit');
+            if (limitEl) limitEl.textContent = `${heapLimit} MB`;
+
+            const uptimeEl = getMetricEl('metric-uptime');
+            if (uptimeEl) uptimeEl.textContent = uptime;
+            
+            const dnsEl = getMetricEl('metric-dns-lookup');
+            if (dnsEl) dnsEl.textContent = `${dnsMock} ms`;
+
+            const loadEl = getMetricEl('metric-load-time');
+            if (loadEl) loadEl.textContent = `${loadTimeMock} ms`;
+
+            const paintEl = getMetricEl('metric-time-paint');
+            if (paintEl) paintEl.textContent = (performance.getEntriesByName('first-paint')[0]?.startTime || 0).toFixed(2);
+
+            const originEl = getMetricEl('metric-time-origin');
+            if (originEl) originEl.textContent = OS_START_TIME.toFixed(0);
+
+
+            // 2. Resource Allocation
+            const openWindows = Object.values(activeWindows).length;
+            const totalApps = APPS.length;
+            const windowUsage = Math.min((openWindows / 5) * 100, 100).toFixed(0);
+
+            const windowCountEl = getMetricEl('metric-open-windows');
+            if (windowCountEl) windowCountEl.textContent = openWindows;
+
+            const windowTotalEl = getMetricEl('metric-total-apps');
+            if (windowTotalEl) windowTotalEl.textContent = totalApps;
+
+            const windowUsageFill = getMetricEl('metric-window-usage-fill');
+            if (windowUsageFill) windowUsageFill.style.width = `${windowUsage}%`;
+
+
+            // 3. Client Metadata (Static or less frequent updates)
+            // These are populated on render, so just a placeholder update if needed
+            const batteryLevel = navigator.getBattery ? (await navigator.getBattery()).level : (Math.random() * 0.3 + 0.6).toFixed(2);
+            const batteryEl = getMetricEl('metric-battery-level');
+            if (batteryEl) batteryEl.textContent = `${(batteryLevel * 100).toFixed(0)}%`;
+            
+            const batteryFill = getMetricEl('metric-battery-fill');
+            if (batteryFill) {
+                batteryFill.style.width = `${(batteryLevel * 100).toFixed(0)}%`;
+                batteryFill.style.backgroundColor = batteryLevel < 0.2 ? '#ef4444' : '#4ade80';
+            }
+
+            // 4. Task/System Mock
+            const taskProgress = ((Date.now() / 1000) % 100).toFixed(0); // Mock value
+            const taskProgressEl = getMetricEl('metric-task-progress-fill');
+            if (taskProgressEl) taskProgressEl.style.width = `${taskProgress}%`;
+
+            requestAnimationFrame(updateMetrics);
+        }
+
+        function startMetricsLoop() {
+            isMetricsLoopRunning = true;
+            // Initial population of static metrics
+            const userAgent = navigator.userAgent;
+            let browserName = 'Unknown';
+            let browserVersion = 'N/A';
+            if (userAgent.includes('Chrome')) {
+                browserName = 'Chrome';
+                browserVersion = userAgent.match(/Chrome\/([\d.]+)/)?.[1] || browserVersion;
+            } else if (userAgent.includes('Firefox')) {
+                browserName = 'Firefox';
+                browserVersion = userAgent.match(/Firefox\/([\d.]+)/)?.[1] || browserVersion;
+            } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                browserName = 'Safari';
+                browserVersion = userAgent.match(/Version\/([\d.]+)/)?.[1] || browserVersion;
+            }
+
+            let osName = 'Unknown';
+            let osVersion = 'N/A';
+            const platform = navigator.platform;
+            if (platform.includes('Win')) {
+                osName = 'Windows';
+                osVersion = userAgent.includes('NT 10.0') ? '10/11' : 'Older';
+            } else if (platform.includes('Mac')) {
+                osName = 'macOS';
+                osVersion = userAgent.includes('Mac OS X') ? userAgent.split('Mac OS X ')[1].split(')')[0].replace(/_/g, '.') : 'Older';
+            } else if (platform.includes('Linux')) {
+                osName = 'Linux';
+                osVersion = 'Kernel';
+            } else if (userAgent.includes('Android')) {
+                osName = 'Android';
+            } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+                osName = 'iOS/iPadOS';
+            }
+            
+            const browserEl = getMetricEl('metric-browser-name');
+            if (browserEl) browserEl.textContent = browserName;
+            
+            const versionEl = getMetricEl('metric-browser-version');
+            if (versionEl) versionEl.textContent = browserVersion;
+            
+            const osNameEl = getMetricEl('metric-os-name');
+            if (osNameEl) osNameEl.textContent = osName;
+            
+            const osVersionEl = getMetricEl('metric-os-version');
+            if (osVersionEl) osVersionEl.textContent = osVersion;
+
+            requestAnimationFrame(updateMetrics);
+        }
+
+        function renderMetricsApp(contentEl) {
+            // ... (Metrics HTML template is extensive but omitted here for focus on new apps)
+            contentEl.innerHTML = `
+                <main class="h-full w-full overflow-y-auto p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        
+                                                <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-green">PERFORMANCE TELEMETRY (9 Metrics)</h2>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-fps">60</span><span class="text-gray-400 ml-1">FPS</span>
+                                    <div class="metric-label">Frame Rate</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-heap-used">--</span>
+                                    <div class="metric-label">Used JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-heap-total">--</span>
+                                    <div class="metric-label">Total JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-origin">--</span>
+                                    <div class="metric-label">Time Origin (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-paint">--</span>
+                                    <div class="metric-label">First Paint (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-load-time">--</span>
+                                    <div class="metric-label">Load Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-uptime">--</span>
+                                    <div class="metric-label">Time Since Init (App Uptime)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-dns-lookup">--</span>
+                                    <div class="metric-label">DNS Lookup Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="metric-value text-xl" id="metric-memory-limit">--</span>
+                                    <div class="metric-label">Memory Limit (Approx)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                                                <div class="col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-cyan">CLIENT METADATA (8 Metrics)</h2>
+                            <div class="space-y-3">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Browser / Version</div>
+                                    <span class="metric-value" id="metric-browser-name">--</span> / <span class="metric-value" id="metric-browser-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">OS Name / Version</div>
+                                    <span class="metric-value" id="metric-os-name">--</span> / <span class="metric-value" id="metric-os-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Local Date / UTC Time</div>
+                                    <span class="metric-value" id="metric-date-local">--</span> / <span class="metric-value" id="metric-time-utc">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Timezone</div>
+                                    <span class="metric-value" id="metric-timezone">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Screen Resolution</div>
+                                    <span class="metric-value" id="metric-resolution">${window.innerWidth}x${window.innerHeight}</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">App Windows Open</div>
+                                    <span class="metric-value text-2xl" id="metric-app-count">0</span> / ${APPS.length}
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Connectivity</div>
+                                    <span class="metric-value" id="metric-connection-type">${navigator.connection?.effectiveType || 'wifi'}</span>
+                                </div>
+                                <div class="pb-2">
+                                    <div class="metric-label">Max Threads (Concurrency)</div>
+                                    <span class="metric-value" id="metric-threads">${navigator.hardwareConcurrency || 4}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                                                <div class="col-span-1 lg:col-span-2 metric-card p-4 rounded-lg flex flex-col justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold mb-3 text-yellow-400">RESOURCE ALLOCATION & STATUS</h2>
+                                
+                                                                <div class="mb-4">
+                                    <div class="metric-label mb-1">Window Resource Usage (Estimated)</div>
+                                    <div class="progress-bar">
+                                        <div id="metric-window-usage-fill" class="progress-bar-fill bg-orange-500" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                                                <div class="mb-4">
+                                    <div class="metric-label mb-1 flex justify-between">
+                                        <span>Battery Level</span>
+                                        <span class="metric-value" id="metric-battery-level">--</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div id="metric-battery-fill" class="progress-bar-fill" style="width: 0%; background-color: #4ade80;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                                                        <div>
+                                <div class="metric-label mb-1">System Integrity Check (Running)</div>
+                                <div class="progress-bar">
+                                    <div id="metric-task-progress-fill" class="progress-bar-fill bg-cyan-500" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            `;
+        }
+
+        // --- 2. Simple Text Editor (Text Editor Content) ---
+        function renderTextEditor(contentEl) {
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full w-full space-y-3">
+                    <div class="flex space-x-2">
+                        <button onclick="showMessage('Save action triggered. (Mock)')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded text-sm transition duration-150">
+                            Save File
+                        </button>
+                        <button onclick="showMessage('Open action triggered. (Mock)')" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-1 px-3 rounded text-sm transition duration-150">
+                            Open File
+                        </button>
+                    </div>
+                    <textarea id="text-editor-input" class="code-input flex-grow h-full" placeholder="// Type your notes or code here...\n\nfunction setup() {\n  console.log('Text Editor Initialized');\n}" style="height: calc(100% - 40px);"></textarea>
+                </div>
+            `;
+        }
+
+        // --- 3. Java Pretty Printer (Pretty Printer Content) ---
+        function renderPrettyPrinter(contentEl) {
+            const instanceId = contentEl.parentElement.id;
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full space-y-3">
+                    <textarea id="java-input-${instanceId}" class="code-input h-48" placeholder="Paste unformatted Java code here..."></textarea>
+                    <button id="pretty-print-btn-${instanceId}" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded transition duration-150">
+                        Run Prettifier
+                    </button>
+                    <textarea id="java-output-${instanceId}" class="code-output flex-grow" readonly placeholder="Formatted code output will appear here..."></textarea>
+                </div>
+            `;
+            
+            document.getElementById(`pretty-print-btn-${instanceId}`).onclick = () => {
+                const input = document.getElementById(`java-input-${instanceId}`).value;
+                const outputEl = document.getElementById(`java-output-${instanceId}`);
+                if (input.trim() === '') {
+                    outputEl.value = 'Error: No code provided to format.';
+                    return;
+                }
+                // Mock formatting: simply adds indentation and a header
+                const lines = input.split('\n').map(line => line.trim());
+                let formatted = '/* KVN.OS Prettifier v1.1 */\n';
+                let indentLevel = 0;
+                lines.forEach(line => {
+                    if (line.endsWith('}')) indentLevel = Math.max(0, indentLevel - 1);
+                    const indent = '  '.repeat(indentLevel);
+                    if (line) formatted += indent + line + '\n';
+                    if (line.endsWith('{')) indentLevel++;
+                });
+                outputEl.value = formatted;
+                showMessage('Code formatted successfully. (Mock)');
+            };
+        }
+
+        // --- 4. Music Player (Music Player Content) ---
+
+        // --- MUSIC PLAYER WIDGET LOGIC (NEW) ---
+
+        function createMicroPlayerWidget() {
+            if (musicPlayerState.widgetEl) return; // Widget already exists
+
+            const widget = document.createElement('div');
+            widget.id = 'micro-player-widget';
+            // Small size, high z-index, drag handle, fixed position
+            widget.className = 'fixed top-1/4 right-4 w-56 h-16 bg-gray-900 border border-cyan-500 rounded-lg shadow-2xl p-2 cursor-pointer z-[100] transition-opacity duration-300 opacity-0 hidden';
+            
+            // Widget Content: Track, Play/Pause, Volume, Waveform
+            widget.innerHTML = `
+                <div class="flex items-center h-full" onmousedown="startWidgetDrag(event, this.parentElement)">
+                                        <button id="widget-play-btn" onclick="togglePlayPause('widget')" class="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center transition duration-150 mr-2">
+                        <svg id="widget-play-icon" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>
+                    </button>
+
+                                        <div class="flex-grow min-w-0 mr-2">
+                        <div class="text-xs font-mono truncate text-cyan-400" id="widget-track-name">--</div>
+                        <div class="relative h-3 w-full mt-1">
+                                                        <div class="absolute inset-0 flex items-end space-x-0.5" id="widget-waveform">
+                                ${Array(10).fill().map((_, i) => `<div class="bg-green-500 rounded-full" style="width: 2px; height: ${Math.floor(Math.random() * 8 + 3)}px; opacity: ${0.5 + Math.random() * 0.5};"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                                        <div class="flex-shrink-0 text-sm font-semibold text-gray-300 w-6 text-right" id="widget-volume">${musicPlayerState.volume}%</div>
+                </div>
+            `;
+
+            document.body.appendChild(widget);
+            musicPlayerState.widgetEl = widget;
+            updateWidgetDisplay();
+        }
+
+        function updateWidgetDisplay() {
+            if (!musicPlayerState.widgetEl) return;
+            
+            // Update Play/Pause Icon
+            const playIcon = document.getElementById('widget-play-icon');
+            if (playIcon) {
+                playIcon.innerHTML = musicPlayerState.isPlaying
+                    ? '<path d="M6 5H8V15H6zM12 5H14V15H12z"/>' // Pause
+                    : '<path d="M7 4V16L17 10L7 4Z"/>';      // Play
+            }
+
+            // Update Track Name and Volume
+            const trackNameEl = document.getElementById('widget-track-name');
+            if (trackNameEl) trackNameEl.textContent = musicPlayerState.trackName;
+            
+            const volumeEl = document.getElementById('widget-volume');
+            if (volumeEl) volumeEl.textContent = `${musicPlayerState.volume}%`;
+            
+            // Mock waveform animation: change heights slightly every second
+            const waveformEl = document.getElementById('widget-waveform');
+            if (waveformEl && musicPlayerState.isPlaying) {
+                Array.from(waveformEl.children).forEach(bar => {
+                    bar.style.height = `${Math.floor(Math.random() * 8 + 3)}px`;
+                });
+            } else if (waveformEl) {
+                // Reset to static when paused
+                Array.from(waveformEl.children).forEach(bar => {
+                    bar.style.height = '3px';
+                });
+            }
+        }
+
+        function showMicroPlayerWidget() {
+            if (!musicPlayerState.widgetEl) {
+                createMicroPlayerWidget();
+            }
+            // Make sure it's the active window ID before showing
+            if (musicPlayerState.mainInstanceId && activeWindows[musicPlayerState.mainInstanceId].isMinimized) {
+                musicPlayerState.widgetEl.classList.remove('hidden');
+                setTimeout(() => musicPlayerState.widgetEl.classList.remove('opacity-0'), 10);
+            }
+        }
+
+        function hideMicroPlayerWidget() {
+            if (musicPlayerState.widgetEl) {
+                musicPlayerState.widgetEl.classList.add('opacity-0');
+                setTimeout(() => musicPlayerState.widgetEl.classList.add('hidden'), 300);
+            }
+        }
+        // --- MUSIC PLAYER CORE FUNCTIONS ---
+
+        function updateMusicDisplay() {
+            const state = musicPlayerState;
+            const mainEl = document.getElementById(`content-${state.mainInstanceId}`);
+            
+            if (mainEl) {
+                const minutes = Math.floor(state.currentTime / 60).toString().padStart(2, '0');
+                const seconds = Math.floor(state.currentTime % 60).toString().padStart(2, '0');
+                
+                // Main Window Updates
+                mainEl.querySelector('#track-name').textContent = state.trackName;
+                mainEl.querySelector('#current-time').textContent = `${minutes}:${seconds}`;
+                mainEl.querySelector('#play-pause-icon').innerHTML = state.isPlaying
+                    ? `<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M6 5H8V15H6zM12 5H14V15H12z"/></svg>`
+                    : `<svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>`;
+
+                const progress = (state.currentTime / state.duration) * 100;
+                mainEl.querySelector('#progress-bar-fill-music').style.width = `${progress}%`;
+                mainEl.querySelector('#volume-range').value = state.volume;
+                mainEl.querySelector('#volume-text').textContent = state.volume;
+            }
+
+            // Update Widget Display
+            if (state.widgetEl && !state.widgetEl.classList.contains('hidden')) {
+                updateWidgetDisplay();
+            }
+        }
+
+        function togglePlayPause(source) {
+            const state = musicPlayerState;
+            if (state.isPlaying) {
+                clearInterval(state.intervalId);
+                state.isPlaying = false;
+                showMessage('Playback Paused: System_Theme_Loop_A.wav');
+            } else {
+                state.isPlaying = true;
+                state.intervalId = setInterval(() => {
+                    state.currentTime++;
+                    if (state.currentTime > state.duration) {
+                        state.currentTime = 0; // Loop mock
+                    }
+                    updateMusicDisplay();
+                }, 1000);
+                showMessage('Playback Started: System_Theme_Loop_A.wav');
+            }
+            updateMusicDisplay();
+        }
+
+        function stopPlayback() {
+            clearInterval(musicPlayerState.intervalId);
+            musicPlayerState.isPlaying = false;
+            musicPlayerState.currentTime = 0;
+            updateMusicDisplay();
+        }
+
+        function setVolume(volume) {
+            musicPlayerState.volume = volume;
+            updateMusicDisplay();
+        }
+
+        function renderMusicPlayer(contentEl) {
+            const instanceId = contentEl.parentElement.id;
+            musicPlayerState.mainInstanceId = instanceId; // Register this instance as the main one
+
+            const totalMinutes = Math.floor(musicPlayerState.duration / 60).toString().padStart(2, '0');
+            const totalSeconds = Math.floor(musicPlayerState.duration % 60).toString().padStart(2, '0');
+
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full w-full space-y-6">
+                                        <div class="flex items-center justify-center h-32 w-32 mx-auto bg-gray-800 rounded-lg border border-cyan-800 p-4">
+                        <svg class="h-20 w-20 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a2 2 0 00-2-2H4a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V3zM9 5h2v6H9V5zm0 8h2v2H9v-2zM6 5h2v6H6V5zm0 8h2v2H6v-2zm8 0h-2v-2h2v2zm0-8h-2v6h2V5z"/></svg>
+                    </div>
+
+                                        <div class="text-center">
+                        <div id="track-name" class="text-xl font-bold text-white">${musicPlayerState.trackName}</div>
+                        <div class="text-gray-400 text-sm">KVN.OS System Artist</div>
+                    </div>
+
+                                        <div class="space-y-1">
+                        <div class="progress-bar">
+                            <div id="progress-bar-fill-music" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 font-mono">
+                            <span id="current-time">00:00</span>
+                            <span>${totalMinutes}:${totalSeconds}</span>
+                        </div>
+                    </div>
+
+                                        <div class="flex justify-center space-x-6 pt-4">
+                                                <button onclick="showMessage('Previous track (Mock)')" class="text-gray-400 hover:text-cyan-400 transition">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path d="M12.793 4.793a1 1 0 010 1.414L9.414 10l3.379 3.379a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
+                        </button>
+                        
+                                                <button onclick="togglePlayPause('main')" class="text-white bg-cyan-600 hover:bg-cyan-700 w-12 h-12 rounded-full flex items-center justify-center transition">
+                            <div id="play-pause-icon">
+                                <svg class="h-8 w-8" fill="currentColor" viewBox="0 0 20 20"><path d="M7 4V16L17 10L7 4Z"/></svg>
+                            </div>
+                        </button>
+                        
+                                                <button onclick="showMessage('Next track (Mock)')" class="text-gray-400 hover:text-cyan-400 transition">
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7.207 15.207a1 1 0 010-1.414L10.586 10 7.207 6.621a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+                        </button>
+                    </div>
+
+                                        <div class="flex items-center space-x-3 pt-6">
+                        <svg class="h-5 w-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 20a1 1 0 01-.707-.293l-5-5H2a1 1 0 01-1-1V6a1 1 0 011-1h2.293l5-5A1 1 0 0111 2v16a1 1 0 01-.707.952l-.045.048zM14 8a1 1 0 010 2 3 3 0 010 6 1 1 0 110-2 1 1 0 000-2 1 1 0 010-2zm3-3a1 1 0 010 2 6 6 0 010 10 1 1 0 110-2 4 4 0 000-8 1 1 0 010-2z"/></svg>
+                        <input type="range" id="volume-range" min="0" max="100" value="${musicPlayerState.volume}" oninput="setVolume(this.value)" class="flex-grow h-1 appearance-none bg-gray-600 rounded-lg">
+                        <span id="volume-text" class="text-sm font-mono w-8 text-right">${musicPlayerState.volume}</span>
+                    </div>
+                </div>
+            `;
+            updateMusicDisplay();
+        }
+
+        // --- 5. Calculator (Calculator Content) ---
+        const calcStates = {}; // Object to hold state for multiple calculator instances
+
+        function initializeCalculatorState(instanceId) {
+            calcStates[instanceId] = {
+                currentInput: '0',
+                operator: null,
+                previousValue: null,
+                waitingForSecondOperand: false,
+                decimalAdded: false
+            };
+        }
+
+        function updateCalculatorDisplay(instanceId) {
+            const state = calcStates[instanceId];
+            const displayEl = document.getElementById(`calc-display-${instanceId}`);
+            if (displayEl) {
+                displayEl.textContent = state.currentInput;
+            }
+        }
+
+        function handleCalculatorInput(instanceId, type, value) {
+            const state = calcStates[instanceId];
+            
+            if (type === 'number') {
+                if (state.waitingForSecondOperand) {
+                    state.currentInput = value;
+                    state.waitingForSecondOperand = false;
+                    state.decimalAdded = false;
+                } else {
+                    state.currentInput = state.currentInput === '0' ? value : state.currentInput + value;
+                }
+            } else if (type === 'decimal') {
+                if (!state.decimalAdded) {
+                    if (state.waitingForSecondOperand) {
+                        state.currentInput = '0.';
+                        state.waitingForSecondOperand = false;
+                    } else {
+                        state.currentInput += '.';
+                    }
+                    state.decimalAdded = true;
+                }
+            } else if (type === 'operator') {
+                const inputValue = parseFloat(state.currentInput);
+
+                if (state.previousValue === null) {
+                    state.previousValue = inputValue;
+                } else if (state.operator) {
+                    const result = calculate(state.previousValue, inputValue, state.operator);
+                    state.currentInput = String(result).substring(0, 10); // Limit digits
+                    state.previousValue = result;
+                }
+                
+                state.waitingForSecondOperand = true;
+                state.operator = value;
+                state.decimalAdded = false;
+
+            } else if (type === 'equals') {
+                const inputValue = parseFloat(state.currentInput);
+                if (state.previousValue === null || state.operator === null) return;
+
+                const result = calculate(state.previousValue, inputValue, state.operator);
+                state.currentInput = String(result).substring(0, 10);
+                state.previousValue = null;
+                state.operator = null;
+                state.waitingForSecondOperand = true;
+                state.decimalAdded = state.currentInput.includes('.');
+
+            } else if (type === 'clear') {
+                initializeCalculatorState(instanceId);
+            }
+
+            updateCalculatorDisplay(instanceId);
+        }
+
+        function calculate(first, second, operator) {
+            switch (operator) {
+                case '+': return first + second;
+                case '-': return first - second;
+                case '*': return first * second;
+                case '/': return second === 0 ? 'Error' : first / second;
+                default: return second;
+            }
+        }
+
+        function renderCalculator(contentEl, instanceId) {
+            initializeCalculatorState(instanceId);
+
+            const buttons = [
+                { label: 'AC', type: 'clear', class: 'col-span-2 bg-red-600 hover:bg-red-700' },
+                { label: '±', type: 'sign', class: 'calc-button' },
+                { label: '/', type: 'operator', value: '/', class: 'calc-op' },
+                { label: '7', type: 'number', value: '7' },
+                { label: '8', type: 'number', value: '8' },
+                { label: '9', type: 'number', value: '9' },
+                { label: '*', type: 'operator', value: '*', class: 'calc-op' },
+                { label: '4', type: 'number', value: '4' },
+                { label: '5', type: 'number', value: '5' },
+                { label: '6', type: 'number', value: '6' },
+                { label: '-', type: 'operator', value: '-', class: 'calc-op' },
+                { label: '1', type: 'number', value: '1' },
+                { label: '2', type: 'number', value: '2' },
+                { label: '3', type: 'number', value: '3' },
+                { label: '+', type: 'operator', value: '+', class: 'calc-op' },
+                { label: '0', type: 'number', value: '0', class: 'col-span-2' },
+                { label: '.', type: 'decimal', value: '.', class: 'calc-button' },
+                { label: '=', type: 'equals', class: 'calc-eq' }
+            ];
+
+            const buttonHtml = buttons.map(btn => {
+                const defaultClass = btn.type === 'number' || btn.type === 'decimal' ? 'calc-button' : '';
+                return `<button onclick="handleCalculatorInput('${instanceId}', '${btn.type}', '${btn.value || btn.label}')" class="${defaultClass} ${btn.class || ''}">${btn.label}</button>`;
+            }).join('');
+
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full">
+                    <div id="calc-display-${instanceId}" class="calc-display text-4xl">0</div>
+                    <div class="grid grid-cols-4 gap-2 flex-grow">
+                        ${buttonHtml}
+                    </div>
+                </div>
+            `;
+            // Initial display update
+            updateCalculatorDisplay(instanceId);
+        }
+
+        // --- 6. To Do List (To Do List Content) ---
+        const todoLists = {};
+
+        function getTodoListState(instanceId) {
+            if (!todoLists[instanceId]) {
+                todoLists[instanceId] = [
+                    { id: 1, text: 'Finalize UI refactor to Tailwind CSS', done: false },
+                    { id: 2, text: 'Implement window dragging logic', done: true },
+                    { id: 3, text: 'Add Micro Player Widget to Music App', done: false },
+                ];
+            }
+            return todoLists[instanceId];
+        }
+
+        function updateTodoListDOM(instanceId) {
+            const listEl = document.getElementById(`todo-list-${instanceId}`);
+            const tasks = getTodoListState(instanceId);
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+            tasks.forEach(task => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `todo-item ${task.done ? 'todo-done' : ''}`;
+                itemDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTodoDone('${instanceId}', ${task.id})" class="h-4 w-4 text-cyan-600 bg-gray-700 border-gray-600 rounded cursor-pointer">
+                        <span class="todo-text">${task.text}</span>
+                    </div>
+                    <button onclick="deleteTodo('${instanceId}', ${task.id})" class="todo-delete-btn text-lg leading-none">&times;</button>
+                `;
+                listEl.appendChild(itemDiv);
+            });
+        }
+
+        function addTodo(instanceId) {
+            const inputEl = document.getElementById(`todo-input-${instanceId}`);
+            const text = inputEl.value.trim();
+            
+            if (text) {
+                const tasks = getTodoListState(instanceId);
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                tasks.push({ id: newId, text: text, done: false });
+                inputEl.value = '';
+                updateTodoListDOM(instanceId);
+            }
+        }
+
+        function toggleTodoDone(instanceId, id) {
+            const tasks = getTodoListState(instanceId);
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.done = !task.done;
+                updateTodoListDOM(instanceId);
+            }
+        }
+
+        function deleteTodo(instanceId, id) {
+            todoLists[instanceId] = getTodoListState(instanceId).filter(t => t.id !== id);
+            updateTodoListDOM(instanceId);
+        }
+
+        function renderToDoList(contentEl, instanceId) {
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full space-y-4">
+                                        <div class="flex space-x-2 flex-shrink-0">
+                        <input type="text" id="todo-input-${instanceId}" placeholder="New Task..." class="code-input flex-grow text-white" onkeydown="if(event.key === 'Enter') addTodo('${instanceId}')">
+                        <button onclick="addTodo('${instanceId}')" class="bg-accent-green hover:bg-green-600 text-gray-900 font-semibold py-2 px-4 rounded-lg transition duration-150 flex-shrink-0">
+                            Add
+                        </button>
+                    </div>
+
+                                        <div id="todo-list-${instanceId}" class="flex-grow overflow-y-auto pt-2 space-y-1">
+                                            </div>
+                </div>
+            `;
+            updateTodoListDOM(instanceId);
+        }
+
+        // --- 7. Placeholder App (Default Content) ---
+        function renderPlaceholderApp(contentEl, appName = 'Application') {
+            contentEl.innerHTML = `
+                <div class="text-center p-8">
+                    <h3 class="text-2xl font-bold text-cyan-400 mb-2">${appName}</h3>
+                    <p class="text-gray-400 font-mono">
+                        [STATUS] System Module is currently offline.<br>
+                        Future development required to enable full functionality.
+                    </p>
+                </div>
+            `;
+        }
+
+
+        // --- OS INITIALIZATION ---
+        
+        function startOS() {
+            let progress = 0;
+            const loadingBar = document.getElementById('loading-bar');
+            const statusText = document.getElementById('loading-status');
+            const bootLog = document.getElementById('boot-log');
+
+            const messages = [
+                "[CORE] Loading system libraries...",
+                "[FS] Checking filesystem integrity...",
+                "[UI] Initializing window manager...",
+                "[NET] Connecting to local network...",
+                "[APPS] Registering application modules...",
+                "[FINISH] Boot sequence complete. Launching shell.",
+            ];
+            
+            let messageIndex = 0;
+
+            function updateBoot() {
+                if (progress < 100) {
+                    progress += (100 - progress) / 15; // Accelerating progress
+                    loadingBar.style.width = `${progress}%`;
+
+                    const targetMessageIndex = Math.floor(progress / 20);
+                    if (targetMessageIndex > messageIndex) {
+                        messageIndex = targetMessageIndex;
+                        if (messages[messageIndex]) {
+                            statusText.textContent = messages[messageIndex];
+                            bootLog.textContent += `\n${messages[messageIndex]}`;
+                        }
+                    }
+                    setTimeout(updateBoot, 100);
+                } else {
+                    loadingScreen.classList.add('opacity-0');
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                        osShell.classList.remove('hidden');
+                        // Auto-open a useful app on startup
+                        createWindow(APPS.find(app => app.id === 'metrics'));
+                    }, 500); // Wait for fade out
+                }
+            }
+
+            // Start Clock and Launcher Setup
+            setInterval(updateTime, 1000);
+            updateTime();
+            createLauncherMenu();
+
+            // Begin Boot Sequence
+            setTimeout(updateBoot, 500);
+        }
+
+        startOS();
+
+    </script>
 </body>
 </html>
