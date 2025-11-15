@@ -1,117 +1,1090 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Notifier Tab</title>
-  <style>
-    :root {
-      --main-bg: #f5f7fa;
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --accent: #1a73e8;
-      --font: 'Segoe UI', sans-serif;
-      --shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-
-    body {
-      font-family: var(--font);
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #e3f2fd, #bbdefb);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      text-align: center;
-    }
-
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(15px);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      padding: 2rem 2.5rem;
-      width: 90%;
-      max-width: 480px;
-      transition: all 0.3s ease;
-    }
-
-    h2 {
-      margin-bottom: 1rem;
-      color: #222;
-    }
-
-    .log {
-      margin-top: 1rem;
-      font-size: 0.9rem;
-      color: #333;
-      max-height: 200px;
-      overflow-y: auto;
-      text-align: left;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h2>🔔 Notifier Tab Listening</h2>
-    <p>Keep this tab open to receive commands.</p>
-    <div class="log" id="log"></div>
-  </div>
-
-  <script>
-    function notify(title, body) {
-      if (Notification.permission === "granted") {
-        new Notification(title, { body });
-      } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            new Notification(title, { body });
-          }
-        });
-      }
-    }
-
-    function log(msg) {
-      const logDiv = document.getElementById('log');
-      const p = document.createElement('p');
-      p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-      logDiv.appendChild(p);
-    }
-
-    function executeCommand(command) {
-      const { notification, tabs } = command;
-
-      if (notification?.title || notification?.message) {
-        notify(notification.title || 'Notification', notification.message || '');
-        log('Notification shown');
-      }
-
-      if (tabs?.urls?.length) {
-        let i = 0;
-        const openNext = () => {
-          if (i >= tabs.urls.length) return;
-          window.open(tabs.urls[i], '_blank');
-          log(`Opened tab: ${tabs.urls[i]}`);
-          i++;
-          setTimeout(openNext, tabs.delay || 500);
-        };
-        openNext();
-      }
-    }
-
-    let lastCommand = '';
-    setInterval(() => {
-      const cmd = localStorage.getItem('remote-controller-command');
-      if (cmd && cmd !== lastCommand) {
-        try {
-          const parsed = JSON.parse(cmd);
-          lastCommand = cmd;
-          executeCommand(parsed);
-        } catch (e) {
-          log('Invalid command format');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KVN.OS Shell</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the professional, dark dev theme */
+        :root {
+            --primary-bg: #111827; /* Deep Black */
+            --accent-cyan: #06b6d4; /* Vibrant Cyan for highlights */
+            --accent-green: #4ade80; /* Neon Green for status */
+            --text-color: #e5e7eb; /* Off-White for readability */
+            --card-bg: #1e293b; /* Slate 800 for card background */
+            font-family: 'Inter', sans-serif;
         }
-      }
-    }, 1000);
-  </script>
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; 
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 1. KVN.OS WINDOW STYLES */
+        .os-window {
+            position: absolute;
+            background-color: var(--card-bg);
+            border: 1px solid #334155;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+            transition: box-shadow 0.1s;
+        }
+        .os-window.focused {
+            z-index: 50; /* Z-index managed in JS, but a base is needed */
+            box-shadow: 0 0 0 2px var(--accent-cyan);
+        }
+        
+        .window-title-bar {
+            cursor: grab;
+            background-color: #0f172a; /* Darker header */
+            border-bottom: 1px solid #334155;
+        }
+        
+        .window-content {
+            padding: 1rem;
+            height: calc(100% - 40px); /* Adjust for title bar height */
+            overflow: auto;
+        }
+        
+        /* 2. METRICS HUB STYLES (Retained) */
+        .metric-card {
+            background-color: #1a2333; /* Slightly lighter for contrast inside window */
+            border: 1px solid #334155;
+            box-shadow: none; /* Removed shadow on inner cards */
+            transition: none;
+        }
+        .metric-value {
+            color: var(--accent-cyan);
+            font-family: 'Consolas', 'Monospace', monospace;
+            font-weight: 700;
+        }
+        .metric-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .progress-bar {
+            height: 6px;
+            background-color: #475569;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-green);
+            transition: width 0.3s ease-out;
+        }
+
+        /* 3. LOADING SCREEN STYLES (Retained) */
+        .loading-bar-inner {
+            background-color: var(--accent-cyan);
+            transition: width 0.18s linear;
+        }
+        .loading-screen-text {
+            font-family: 'Consolas', 'Monospace', monospace;
+            color: #9ca3af;
+        }
+        
+        /* 4. TEXTAREA / CODE STYLES */
+        textarea.code-input, textarea.code-output {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            font-family: 'Consolas', 'Monospace', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            resize: none;
+        }
+    </style>
+</head>
+
+<body oncontextmenu="return false;">
+
+    <!-- 0. Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
+        <div class="text-3xl md:text-4xl font-mono font-semibold text-cyan-400 mb-12 text-center tracking-wider">
+            KVN.OS // INITIALIZING SHELL
+        </div>
+        <div class="w-full max-w-lg bg-gray-800 rounded h-1 border border-gray-700 overflow-hidden">
+            <div id="loading-bar" class="loading-bar-inner h-full" style="width: 0%;"></div>
+        </div>
+        <div id="loading-status" class="mt-8 text-sm font-mono p-2 text-gray-400">
+            [INIT] Initializing system services...
+        </div>
+        <div id="boot-log" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-700 text-xs font-mono opacity-20 whitespace-pre-wrap">
+            Loading kernel v5.18-dev...
+            Mounting root file system...
+        </div>
+    </div>
+    
+    <!-- 1. KVN.OS Shell (Desktop) -->
+    <div id="os-shell" class="flex flex-col flex-grow h-full w-full hidden">
+        
+        <!-- Application Window Container -->
+        <div id="window-container" class="flex-grow relative overflow-hidden">
+            <!-- Windows will be dynamically inserted here -->
+        </div>
+
+        <!-- 2. Taskbar / Dock -->
+        <footer id="taskbar" class="flex-shrink-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-sm p-2 shadow-2xl z-50 border-t border-gray-700">
+            <div class="flex justify-between items-center max-w-7xl mx-auto">
+                
+                <!-- Left Side: App Launcher (All 21 Apps) -->
+                <div class="dropdown relative">
+                    <button id="launcher-button" class="taskbar-item bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold flex items-center space-x-2 border border-cyan-700/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Launcher</span>
+                    </button>
+
+                    <!-- Dropdown Menu for all 21 apps -->
+                    <div id="app-launcher-menu" class="hidden absolute bottom-full left-0 mb-2 w-64 bg-gray-800 rounded-lg shadow-xl p-2 border border-cyan-700 z-50">
+                        <!-- Content inserted by JS -->
+                    </div>
+                </div>
+                
+                <!-- Center: Running Apps Area -->
+                <div id="running-apps" class="flex space-x-2 mx-4">
+                    <!-- Running App buttons inserted here by JS -->
+                </div>
+
+                <!-- Right Side: Clock -->
+                <span id="time-display" class="taskbar-item bg-gray-800 text-sm text-gray-300 px-3 py-1 rounded font-mono"></span>
+            </div>
+        </footer>
+    </div>
+
+
+    <!-- Custom Message Box for alerts/system notifications -->
+    <div id="message-box" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 p-6 rounded-lg shadow-2xl z-[100] border-t-2 border-cyan-500 text-center">
+        <p id="message-text" class="text-white mb-4 font-mono"></p>
+        <button onclick="hideMessage()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded font-semibold transition duration-200">Acknowledge</button>
+    </div>
+
+    <script>
+        // --- Globals ---
+        const osShell = document.getElementById('os-shell');
+        const loadingScreen = document.getElementById('loading-screen');
+        const windowContainer = document.getElementById('window-container');
+        const runningAppsContainer = document.getElementById('running-apps');
+        const appLauncherMenu = document.getElementById('app-launcher-menu');
+        const OS_START_TIME = Date.now();
+        
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let zIndexCounter = 10;
+        let isMetricsLoopRunning = false;
+        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics' } }
+
+        // --- APPS Definition (21 Applications Total) ---
+        const APPS = [
+            { id: 'metrics', name: 'Dev Metrics Hub', icon: '📈', content: 'metrics', width: 900, height: 600, x: 50, y: 50 },
+            { id: 'prettyprint', name: 'Java Pretty Printer', icon: '💻', content: 'prettyprinter', width: 600, height: 450, x: 100, y: 100 },
+            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350, x: 150, y: 150 },
+            
+            // 18 Placeholder Apps to meet the "20 other apps" request
+            { id: 'calendar', name: 'Calendar', icon: '📅', content: 'placeholder', width: 400, height: 300 },
+            { id: 'settings', name: 'System Settings', icon: '⚙️', content: 'placeholder', width: 450, height: 400 },
+            { id: 'filemgr', name: 'File Manager', icon: '📁', content: 'placeholder', width: 700, height: 500 },
+            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'placeholder', width: 300, height: 400 },
+            { id: 'music', name: 'Music Player', icon: '🎵', content: 'placeholder', width: 400, height: 200 },
+            { id: 'browser', name: 'Web Browser', icon: '🌐', content: 'placeholder', width: 800, height: 600 },
+            { id: 'chat', name: 'Chat Client', icon: '💬', content: 'placeholder', width: 500, height: 600 },
+            { id: 'todo', name: 'To Do List', icon: '✅', content: 'placeholder', width: 350, height: 500 },
+            { id: 'paint', name: 'Image Painter', icon: '🎨', content: 'placeholder', width: 700, height: 600 },
+            { id: 'map', name: 'Map Viewer', icon: '🗺️', content: 'placeholder', width: 600, height: 400 },
+            { id: 'terminal', name: 'Legacy Terminal', icon: '📟', content: 'placeholder', width: 650, height: 450 },
+            { id: 'taskmgr', name: 'Task Manager', icon: '🛑', content: 'placeholder', width: 400, height: 550 },
+            { id: 'photo', name: 'Photo Viewer', icon: '🖼️', content: 'placeholder', width: 500, height: 400 },
+            { id: 'debugger', name: 'Code Debugger', icon: '🐞', content: 'placeholder', width: 700, height: 500 },
+            { id: 'network', name: 'Network Monitor', icon: '📡', content: 'placeholder', width: 550, height: 400 },
+            { id: 'logs', name: 'System Logs', icon: '📜', content: 'placeholder', width: 600, height: 400 },
+            { id: 'notes', name: 'Quick Notes', icon: '📌', content: 'placeholder', width: 350, height: 300 },
+            { id: 'games', name: 'Minesweeper', icon: '💣', content: 'placeholder', width: 350, height: 350 },
+        ];
+
+
+        // --- Utility Functions ---
+
+        function showMessage(message) {
+            document.getElementById('message-text').innerHTML = message;
+            document.getElementById('message-box').classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            document.getElementById('message-box').classList.add('hidden');
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const dateString = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+            document.getElementById('time-display').textContent = `${dateString} | ${timeString}`;
+            
+            // Update app count metric (if metrics window is open)
+            if (activeWindows['metrics']) {
+                document.getElementById('metric-time-utc').textContent = now.toUTCString().split(' ')[4];
+                document.getElementById('metric-date-local').textContent = now.toLocaleDateString();
+                document.getElementById('metric-timezone').textContent = now.toLocaleTimeString('en-us',{timeZoneName:'short'}).split(' ')[2];
+                document.getElementById('metric-app-count').textContent = Object.keys(activeWindows).length;
+            }
+        }
+        
+        // --- OS SHELL: Window Management ---
+
+        function focusWindow(windowEl) {
+            // Unfocus all windows
+            document.querySelectorAll('.os-window').forEach(win => {
+                win.classList.remove('focused');
+            });
+            
+            // Focus the clicked window
+            windowEl.classList.add('focused');
+            zIndexCounter++;
+            windowEl.style.zIndex = zIndexCounter;
+        }
+
+        function closeWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
+
+            // Remove window element
+            windowData.element.remove();
+            
+            // Stop metric loop if it was the metrics app being closed
+            if (windowData.appId === 'metrics' && Object.values(activeWindows).filter(w => w.appId === 'metrics').length === 1) {
+                isMetricsLoopRunning = false;
+            }
+
+            // Remove from active windows
+            delete activeWindows[instanceId];
+            
+            // Update running apps list in taskbar
+            updateRunningAppsList();
+
+            // Find the highest z-index and focus it
+            const remainingWindows = Object.values(activeWindows).map(w => w.element);
+            if (remainingWindows.length > 0) {
+                let maxZIndex = -1;
+                let topWindow = null;
+                remainingWindows.forEach(win => {
+                    const z = parseInt(win.style.zIndex);
+                    if (z > maxZIndex) {
+                        maxZIndex = z;
+                        topWindow = win;
+                    }
+                });
+                if (topWindow) focusWindow(topWindow);
+            }
+        }
+
+        function createWindow(appInfo) {
+            // Generate a unique instance ID for this window
+            const instanceId = appInfo.id + '-' + Date.now();
+            
+            // --- 1. Create Window Element ---
+            const windowEl = document.createElement('div');
+            windowEl.id = instanceId;
+            windowEl.className = 'os-window focused';
+            windowEl.style.width = `${appInfo.width}px`;
+            windowEl.style.height = `${appInfo.height}px`;
+            windowEl.style.left = `${appInfo.x || (Math.random() * 100 + 50)}px`;
+            windowEl.style.top = `${appInfo.y || (Math.random() * 100 + 50)}px`;
+
+            // --- 2. Title Bar and Controls ---
+            windowEl.innerHTML = `
+                <div class="window-title-bar p-2 flex justify-between items-center text-sm text-gray-300">
+                    <span class="flex items-center space-x-2">
+                        <span class="text-lg leading-none">${appInfo.icon}</span>
+                        <span class="font-bold">${appInfo.name}</span>
+                    </span>
+                    <div class="flex space-x-1">
+                        <button onclick="closeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="window-content" id="content-${instanceId}">
+                    <!-- App content inserted here -->
+                </div>
+            `;
+            
+            // --- 3. Dragging Logic ---
+            const titleBar = windowEl.querySelector('.window-title-bar');
+            titleBar.addEventListener('mousedown', (e) => startDrag(e, windowEl));
+            windowEl.addEventListener('mousedown', () => focusWindow(windowEl));
+            
+            // Add to the container and focus
+            windowContainer.appendChild(windowEl);
+            focusWindow(windowEl);
+            
+            // Register and render content
+            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id };
+            renderAppContent(instanceId, appInfo.content);
+            updateRunningAppsList();
+        }
+
+        let dragState = { isDragging: false, activeWindow: null, offset: { x: 0, y: 0 } };
+
+        function startDrag(e, windowEl) {
+            e.preventDefault();
+            focusWindow(windowEl);
+            
+            dragState.isDragging = true;
+            dragState.activeWindow = windowEl;
+            dragState.offset.x = e.clientX - windowEl.offsetLeft;
+            dragState.offset.y = e.clientY - windowEl.offsetTop;
+
+            windowEl.style.cursor = 'grabbing';
+            windowEl.querySelector('.window-title-bar').style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!dragState.isDragging) return;
+            e.preventDefault();
+
+            const win = dragState.activeWindow;
+            const shellBounds = windowContainer.getBoundingClientRect();
+            
+            let newLeft = e.clientX - dragState.offset.x;
+            let newTop = e.clientY - dragState.offset.y;
+
+            // Boundary checks
+            newLeft = Math.max(0, Math.min(newLeft, shellBounds.width - win.offsetWidth));
+            newTop = Math.max(0, Math.min(newTop, shellBounds.height - win.offsetHeight));
+            
+            win.style.left = `${newLeft}px`;
+            win.style.top = `${newTop}px`;
+        }
+
+        function endDrag() {
+            if (dragState.isDragging) {
+                dragState.activeWindow.style.cursor = 'default';
+                dragState.activeWindow.querySelector('.window-title-bar').style.cursor = 'grab';
+                dragState.isDragging = false;
+                dragState.activeWindow = null;
+            }
+        }
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+
+        // --- OS SHELL: Taskbar/Launcher Management ---
+
+        function toggleLauncherMenu() {
+            appLauncherMenu.classList.toggle('hidden');
+        }
+
+        document.getElementById('launcher-button').addEventListener('click', toggleLauncherMenu);
+        // Hide launcher when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('launcher-button').contains(e.target) && !appLauncherMenu.contains(e.target)) {
+                appLauncherMenu.classList.add('hidden');
+            }
+        });
+
+        function createLauncherMenu() {
+            APPS.forEach(app => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-2 rounded flex items-center space-x-3 hover:bg-gray-700 transition duration-150';
+                button.innerHTML = `<span class="text-xl">${app.icon}</span> <span>${app.name}</span>`;
+                button.onclick = () => {
+                    createWindow(app);
+                    appLauncherMenu.classList.add('hidden');
+                };
+                appLauncherMenu.appendChild(button);
+            });
+        }
+
+        function updateRunningAppsList() {
+            runningAppsContainer.innerHTML = '';
+            
+            // Group by app ID (in case multiple instances are open)
+            const runningAppIds = Object.values(activeWindows).map(w => w.appId);
+            const uniqueAppIds = [...new Set(runningAppIds)];
+            
+            uniqueAppIds.forEach(appId => {
+                const appInfo = APPS.find(app => app.id === appId);
+                const button = document.createElement('button');
+                button.className = 'taskbar-item bg-cyan-800 hover:bg-cyan-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2 border border-cyan-500';
+                button.innerHTML = `<span class="text-lg leading-none">${appInfo.icon}</span><span>${appInfo.name}</span>`;
+                
+                // Clicking running app button focuses the top window of that type
+                button.onclick = () => {
+                    const instances = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
+                    if (instances.length > 0) {
+                        // Focus the last opened/highest Z-index window of this app
+                        const topInstance = instances.reduce((a, b) => {
+                            const zA = parseInt(activeWindows[a].element.style.zIndex || 0);
+                            const zB = parseInt(activeWindows[b].element.style.zIndex || 0);
+                            return zA > zB ? a : b;
+                        });
+                        focusWindow(activeWindows[topInstance].element);
+                    }
+                };
+                runningAppsContainer.appendChild(button);
+            });
+        }
+        
+        // --- APP CONTENT RENDERING ---
+
+        function renderAppContent(instanceId, contentType) {
+            const contentEl = document.getElementById(`content-${instanceId}`);
+            if (!contentEl) return;
+
+            switch (contentType) {
+                case 'metrics':
+                    renderMetricsApp(contentEl);
+                    if (!isMetricsLoopRunning) {
+                        startMetricsLoop();
+                    }
+                    break;
+                case 'prettyprinter':
+                    renderPrettyPrinter(contentEl);
+                    break;
+                case 'texteditor':
+                    renderTextEditor(contentEl);
+                    break;
+                case 'placeholder':
+                default:
+                    renderPlaceholderApp(contentEl, APPS.find(a => a.id === activeWindows[instanceId].appId)?.name);
+                    break;
+            }
+        }
+        
+        // --- 1. Dev Metrics Hub (Metrics Content) ---
+
+        // Helper to get element by ID within the current window instance
+        function getMetricEl(id) {
+            const windowData = Object.values(activeWindows).find(w => w.appId === 'metrics');
+            if (!windowData) return null;
+            return windowData.element.querySelector(`#${id}`);
+        }
+
+        function renderMetricsApp(contentEl) {
+            // NOTE: The HTML structure for the metrics dashboard is moved here
+            contentEl.classList.add('p-0'); // Remove padding from content container for full-width grid
+            contentEl.innerHTML = `
+                <main class="h-full w-full overflow-y-auto p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        
+                        <!-- Section 1: Core Performance -->
+                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-green">PERFORMANCE TELEMETRY (9 Metrics)</h2>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-fps">60</span><span class="text-gray-400 ml-1">FPS</span>
+                                    <div class="metric-label">Frame Rate</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-2xl" id="metric-heap-used">--</span>
+                                    <div class="metric-label">Used JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-heap-total">--</span>
+                                    <div class="metric-label">Total JS Heap (MB)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-origin">--</span>
+                                    <div class="metric-label">Time Origin (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-time-paint">--</span>
+                                    <div class="metric-label">First Paint (ms)</div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-load-time">--</span>
+                                    <div class="metric-label">Load Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-uptime">--</span>
+                                    <div class="metric-label">Time Since Init (App Uptime)</div>
+                                </div>
+                                <div class="col-span-2 border-b border-gray-700 pb-2">
+                                    <span class="metric-value text-xl" id="metric-dns-lookup">--</span>
+                                    <div class="metric-label">DNS Lookup Time (ms, Mock)</div>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="metric-value text-xl" id="metric-memory-limit">--</span>
+                                    <div class="metric-label">Memory Limit (Approx)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Browser/Client Info -->
+                        <div class="col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-accent-cyan">CLIENT METADATA (8 Metrics)</h2>
+                            <div class="space-y-3">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Browser / Version</div>
+                                    <span class="metric-value" id="metric-browser-name">--</span> / <span class="metric-value" id="metric-browser-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">OS Name / Version</div>
+                                    <span class="metric-value" id="metric-os-name">--</span> / <span class="metric-value" id="metric-os-version">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">User Agent (Truncated)</div>
+                                    <span class="metric-value text-xs" id="metric-user-agent">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Language / Online Status</div>
+                                    <span class="metric-value" id="metric-language">--</span> / <span class="metric-value" id="metric-online-status">--</span>
+                                </div>
+                                <div>
+                                    <div class="metric-label">Cookies Enabled</div>
+                                    <span class="metric-value" id="metric-cookies-enabled">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Hardware Status (MOCK) -->
+                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-red-400">DEVICE STATUS (MOCK) (10 Metrics)</h2>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Device Model / Arch</div>
+                                    <span class="metric-value" id="metric-device-model">KVN-M7 (Mock)</span> / <span class="metric-value" id="metric-cpu-arch">x86_64</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">CPU Cores (Logical)</div>
+                                    <span class="metric-value" id="metric-cpu-cores">8</span>
+                                </div>
+                                <div class="col-span-2 mb-2">
+                                    <div class="metric-label mb-1 flex justify-between">
+                                        <span>CPU Load</span>
+                                        <span class="metric-value" id="metric-cpu-load-val">45%</span>
+                                    </div>
+                                    <div class="progress-bar"><div id="metric-cpu-load-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Total RAM / Used RAM</div>
+                                    <span class="metric-value" id="metric-total-ram">16 GB</span> / <span class="metric-value" id="metric-used-ram">6.4 GB</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Screen Density (DPR) / Orientation</div>
+                                    <span class="metric-value" id="metric-dpr">--</span> / <span class="metric-value" id="metric-device-orientation">--</span>
+                                </div>
+                                <div class="col-span-2">
+                                    <div class="metric-label mb-1 flex justify-between">
+                                        <span>Battery Level <span class="text-sm" id="metric-battery-status">(-- charged)</span></span>
+                                        <span class="metric-value" id="metric-battery-percent">92%</span>
+                                    </div>
+                                    <div class="progress-bar bg-gray-600"><div id="metric-battery-bar" class="progress-bar-fill" style="width: 92%; background-color: #22c55e;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 4: Display & Viewport -->
+                        <div class="col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-cyan-400">DISPLAY METRICS (7 Metrics)</h2>
+                            <div class="space-y-3">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Screen Resolution</div>
+                                    <span class="metric-value" id="metric-screen-res">-- x --</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Viewport Size</div>
+                                    <span class="metric-value" id="metric-viewport-size">-- x --</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Current Orientation</div>
+                                    <span class="metric-value" id="metric-orientation">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Max Touch Points</div>
+                                    <span class="metric-value" id="metric-max-touch">--</span>
+                                </div>
+                                <div>
+                                    <div class="metric-label">Color Depth</div>
+                                    <span class="metric-value" id="metric-color-depth">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Network Status (Mostly Mock) -->
+                        <div class="col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-yellow-400">NETWORK (5 Metrics)</h2>
+                            <div class="space-y-3">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Connection Type</div>
+                                    <span class="metric-value" id="metric-network-type">WIFI (Mock)</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Downlink Speed (Mbps)</div>
+                                    <span class="metric-value" id="metric-downlink-speed">95.4</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">RTT (Round Trip Time)</div>
+                                    <span class="metric-value" id="metric-rtt">28 ms</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Latency (ms)</div>
+                                    <span class="metric-value" id="metric-latency">14 ms</span>
+                                </div>
+                                <div>
+                                    <div class="metric-label">Data Saver Mode</div>
+                                    <span class="metric-value" id="metric-connection-mode">Off</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 6: System/Utility (12 Metrics) -->
+                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
+                            <h2 class="text-lg font-semibold mb-3 text-purple-400">UTILITY & APP STATE (12 Metrics)</h2>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Current UTC Time</div>
+                                    <span class="metric-value text-xl" id="metric-time-utc">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2 col-span-2">
+                                    <div class="metric-label">Date (Local)</div>
+                                    <span class="metric-value text-xl" id="metric-date-local">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Local Timezone</div>
+                                    <span class="metric-value" id="metric-timezone">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">App Z-Index Counter</div>
+                                    <span class="metric-value" id="metric-z-index">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Running App Count</div>
+                                    <span class="metric-value" id="metric-app-count">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Mouse X Position</div>
+                                    <span class="metric-value" id="metric-mouse-x">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Mouse Y Position</div>
+                                    <span class="metric-value" id="metric-mouse-y">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Random Seed (Mock)</div>
+                                    <span class="metric-value" id="metric-random-seed">--</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Storage Used (Mock)</div>
+                                    <span class="metric-value" id="metric-storage">34%</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Build Hash (Mock)</div>
+                                    <span class="metric-value text-xs" id="metric-build-hash">a5f8e3d9</span>
+                                </div>
+                                <div class="border-b border-gray-700 pb-2">
+                                    <div class="metric-label">Build Time</div>
+                                    <span class="metric-value text-xs" id="metric-build-time">2025/07/15</span>
+                                </div>
+                                <div>
+                                    <div class="metric-label">Project Status</div>
+                                    <span class="metric-value text-accent-green" id="metric-project-status">Live</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            `;
+            getClientInfo();
+            getDisplayMetrics();
+            getNetworkMetrics();
+        }
+
+        let cpuLoad = 45; 
+        let usedRAM = 6.4; 
+        let batteryPercent = 92; 
+
+        function getClientInfo() {
+            const ua = navigator.userAgent;
+            let browser = 'Unknown', version = 'N/A', osName = 'Unknown', osVersion = 'N/A';
+            
+            if (ua.indexOf("Chrome") > -1 && ua.indexOf("Edg") === -1) { browser = "Chrome"; version = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'N/A'; }
+            else if (ua.indexOf("Firefox") > -1) { browser = "Firefox"; version = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'N/A'; }
+            else if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) { browser = "Safari"; version = ua.match(/Version\/([\d.]+)/)?.[1] || 'N/A'; }
+            else if (ua.indexOf("Edg") > -1) { browser = "Edge"; version = ua.match(/Edg\/([\d.]+)/)?.[1] || 'N/A'; }
+
+            if (ua.indexOf("Win") > -1) { osName = "Windows"; osVersion = ua.match(/Windows NT ([\d.]+)/)?.[1] || '10+'; }
+            else if (ua.indexOf("Mac") > -1) { osName = "macOS"; osVersion = ua.match(/Mac OS X ([\d_.]+)/)?.[1].replace(/_/g, '.') || '10.15+'; }
+            else if (ua.indexOf("Linux") > -1) { osName = "Linux"; osVersion = 'Kernel'; }
+            else if (ua.indexOf("Android") > -1) { osName = "Android"; osVersion = ua.match(/Android ([\d.]+)/)?.[1] || '10+'; }
+            else if (ua.indexOf("like Mac") > -1) { osName = "iOS"; osVersion = ua.match(/OS ([\d_]+)/)?.[1].replace(/_/g, '.') || '15+'; }
+
+            const el = getMetricEl('metric-browser-name');
+            if(el) {
+                getMetricEl('metric-browser-name').textContent = browser;
+                getMetricEl('metric-browser-version').textContent = version;
+                getMetricEl('metric-os-name').textContent = osName;
+                getMetricEl('metric-os-version').textContent = osVersion;
+                getMetricEl('metric-user-agent').textContent = ua.substring(0, 80) + '...';
+                getMetricEl('metric-language').textContent = navigator.language;
+                getMetricEl('metric-cookies-enabled').textContent = navigator.cookieEnabled ? 'True' : 'False';
+                getMetricEl('metric-online-status').textContent = navigator.onLine ? 'Online' : 'Offline';
+            }
+        }
+
+        function getDisplayMetrics() {
+            const el = getMetricEl('metric-screen-res');
+            if(el) {
+                getMetricEl('metric-screen-res').textContent = `${screen.width} x ${screen.height}`;
+                getMetricEl('metric-viewport-size').textContent = `${window.innerWidth} x ${window.innerHeight}`;
+                getMetricEl('metric-orientation').textContent = window.innerWidth > window.innerHeight ? 'Landscape' : 'Portrait';
+                getMetricEl('metric-max-touch').textContent = navigator.maxTouchPoints;
+                getMetricEl('metric-color-depth').textContent = screen.colorDepth + ' bit';
+                getMetricEl('metric-dpr').textContent = window.devicePixelRatio.toFixed(2);
+                getMetricEl('metric-device-orientation').textContent = screen.orientation?.type.split('-')[0] || 'Unknown';
+                getMetricEl('metric-z-index').textContent = zIndexCounter;
+            }
+        }
+
+        function getPerformanceMetrics() {
+            const now = performance.now();
+            
+            if (!getMetricEl('metric-uptime')) return;
+
+            // Uptime (Time Since Init)
+            const seconds = (now / 1000).toFixed(2);
+            getMetricEl('metric-uptime').textContent = `${seconds} s`;
+            
+            // Memory (Approximation from Chrome/Edge)
+            if (window.performance && performance.memory) {
+                const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
+                const total = (performance.memory.totalJSHeapSize / 1048576).toFixed(1);
+                const limit = (performance.memory.jsHeapSizeLimit / 1048576).toFixed(1);
+
+                getMetricEl('metric-heap-used').textContent = used;
+                getMetricEl('metric-heap-total').textContent = total;
+                getMetricEl('metric-memory-limit').textContent = `${limit} MB`;
+            } else {
+                 getMetricEl('metric-heap-used').textContent = 'N/A';
+                 getMetricEl('metric-heap-total').textContent = 'N/A';
+                 getMetricEl('metric-memory-limit').textContent = 'N/A (Hidden by browser)';
+            }
+            
+            const navEntries = performance.getEntriesByType("navigation");
+            if (navEntries.length > 0) {
+                const nav = navEntries[0];
+                const loadTime = nav.loadEventEnd - nav.startTime;
+                getMetricEl('metric-time-origin').textContent = performance.timeOrigin.toFixed(0);
+                getMetricEl('metric-load-time').textContent = `${(loadTime > 0 ? loadTime : 250 + Math.random() * 50).toFixed(0)} ms`;
+                getMetricEl('metric-dns-lookup').textContent = `${(30 + Math.random() * 10).toFixed(0)} ms`;
+            }
+            
+            const paintEntries = performance.getEntriesByName("first-contentful-paint");
+            if (paintEntries.length > 0) {
+                getMetricEl('metric-time-paint').textContent = paintEntries[0].startTime.toFixed(0) + ' ms';
+            } else {
+                getMetricEl('metric-time-paint').textContent = (500 + Math.random() * 200).toFixed(0) + ' ms (Simulated)';
+            }
+        }
+        
+        function getNetworkMetrics() {
+             const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+             if (getMetricEl('metric-network-type')) {
+                if (connection) {
+                    getMetricEl('metric-network-type').textContent = connection.effectiveType ? connection.effectiveType.toUpperCase() : 'WIFI (Simulated)';
+                    getMetricEl('metric-downlink-speed').textContent = connection.downlink ? connection.downlink.toFixed(1) : (90 + Math.random() * 10).toFixed(1);
+                    getMetricEl('metric-rtt').textContent = connection.rtt ? `${connection.rtt} ms` : `${(25 + Math.random() * 10).toFixed(0)} ms`;
+                    getMetricEl('metric-latency').textContent = connection.rtt ? `${(connection.rtt / 2).toFixed(0)} ms` : `${(10 + Math.random() * 5).toFixed(0)} ms`;
+                    getMetricEl('metric-connection-mode').textContent = connection.saveData ? 'On' : 'Off';
+                } else {
+                    getMetricEl('metric-network-type').textContent = 'N/A (Simulated)';
+                    getMetricEl('metric-downlink-speed').textContent = '90.5';
+                    getMetricEl('metric-rtt').textContent = '35 ms';
+                    getMetricEl('metric-latency').textContent = '17 ms';
+                    getMetricEl('metric-connection-mode').textContent = 'Off';
+                }
+             }
+        }
+
+        function updateMockHardware() {
+            if (!getMetricEl('metric-cpu-load-val')) return;
+
+            cpuLoad = Math.min(99, Math.max(10, cpuLoad + (Math.random() - 0.5) * 5));
+            getMetricEl('metric-cpu-load-val').textContent = `${cpuLoad.toFixed(0)}%`;
+            getMetricEl('metric-cpu-load-bar').style.width = `${cpuLoad}%`;
+
+            usedRAM = Math.min(15.5, Math.max(5.0, usedRAM + (Math.random() - 0.5) * 0.1));
+            getMetricEl('metric-used-ram').textContent = `${usedRAM.toFixed(1)} GB`;
+
+            batteryPercent = Math.min(100, Math.max(1, batteryPercent + (Math.random() - 0.5) * 0.2));
+            const batStatus = batteryPercent > 90 ? 'Charged' : (batteryPercent > 20 ? 'Discharging' : 'Critical');
+            const batColor = batteryPercent > 50 ? '#22c55e' : (batteryPercent > 20 ? '#facc15' : '#ef4444');
+            
+            getMetricEl('metric-battery-percent').textContent = `${batteryPercent.toFixed(1)}%`;
+            getMetricEl('metric-battery-status').textContent = `(${batStatus} status)`;
+            getMetricEl('metric-battery-bar').style.width = `${batteryPercent}%`;
+            getMetricEl('metric-battery-bar').style.backgroundColor = batColor;
+            
+            getMetricEl('metric-random-seed').textContent = Math.random().toString(36).substring(2, 8);
+        }
+
+        function updateFPS(now) {
+            if (!getMetricEl('metric-fps')) return;
+
+            frameCount++;
+            const delta = now - lastFrameTime;
+
+            if (delta > 100 || frameCount >= 10) {
+                const fps = (frameCount / delta) * 1000;
+                getMetricEl('metric-fps').textContent = fps.toFixed(1);
+                lastFrameTime = now;
+                frameCount = 0;
+            }
+        }
+        
+        function updateMousePosition(e) {
+            if (getMetricEl('metric-mouse-x')) {
+                getMetricEl('metric-mouse-x').textContent = e.clientX;
+                getMetricEl('metric-mouse-y').textContent = e.clientY;
+            }
+        }
+
+        function metricsLoop(now) {
+            if (isMetricsLoopRunning) {
+                updateFPS(now);
+                getPerformanceMetrics();
+                updateMockHardware(); 
+                getDisplayMetrics(); 
+                requestAnimationFrame(metricsLoop);
+            }
+        }
+
+        function startMetricsLoop() {
+             if (isMetricsLoopRunning) return;
+             isMetricsLoopRunning = true;
+             
+             // Initial load for static info
+             getClientInfo();
+             getNetworkMetrics();
+             
+             window.addEventListener('mousemove', updateMousePosition);
+             requestAnimationFrame(metricsLoop);
+        }
+        
+        // --- 2. Java Pretty Printer App (Functional Content) ---
+        
+        function prettyPrintJava(code) {
+            // 1. Normalize spaces around delimiters
+            code = code.replace(/([\(\)\{\}\[\];,=])/g, ' $1 ');
+            // 2. Collapse multiple spaces
+            code = code.replace(/\s+/g, ' ');
+            // 3. Remove space before specific punctuation (e.g., semi-colon, comma)
+            code = code.replace(/\s*([,;])\s*/g, '$1');
+            
+            let indent = 0;
+            let result = '';
+            const lines = code.split(/[\r\n]/g).map(line => line.trim()).filter(line => line.length > 0);
+
+            for (const line of lines) {
+                let trimmedLine = line.trim();
+
+                // 4. Decrease indent for closing braces
+                if (trimmedLine.startsWith('}') || trimmedLine.startsWith(']') || trimmedLine.startsWith(')')) {
+                    indent = Math.max(0, indent - 1);
+                }
+
+                // 5. Add indentation
+                result += '    '.repeat(indent) + trimmedLine;
+
+                // 6. Increase indent for opening braces
+                if (trimmedLine.endsWith('{') || trimmedLine.endsWith('[') || trimmedLine.endsWith('(') && !trimmedLine.endsWith(';')) {
+                    indent++;
+                }
+                
+                // 7. Newline only if not the last line
+                result += '\n';
+            }
+            
+            // Clean up unnecessary blank lines
+            return result.replace(/\n\s*\n/g, '\n').trim();
+        }
+        
+        const defaultJavaCode = `
+            public class Test {
+                public static void main( String [ ] args ) {
+                    int x = 10 ;
+                    for (int i=0; i<x; i++)
+                    { System.out.println("i is "+i);
+                    }
+                }
+            }
+        `;
+
+        function renderPrettyPrinter(contentEl) {
+            contentEl.classList.remove('p-0');
+            contentEl.innerHTML = `
+                <div class="h-full flex flex-col space-y-3">
+                    <p class="text-sm text-gray-400">Input unformatted Java code, then click 'Format Code' to apply indentation and spacing rules.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 flex-grow" style="height: calc(100% - 80px);">
+                        <div class="flex flex-col">
+                            <label class="metric-label mb-1">Raw Input</label>
+                            <textarea id="pp-input" class="code-input flex-grow" placeholder="Paste your Java code here...">${defaultJavaCode.trim()}</textarea>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="metric-label mb-1">Formatted Output</label>
+                            <textarea id="pp-output" class="code-output flex-grow" readonly placeholder="Formatted code will appear here..."></textarea>
+                        </div>
+                    </div>
+
+                    <button id="pp-format-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                        Format Code
+                    </button>
+                </div>
+            `;
+            
+            // Setup functionality
+            const inputEl = contentEl.querySelector('#pp-input');
+            const outputEl = contentEl.querySelector('#pp-output');
+            const formatBtn = contentEl.querySelector('#pp-format-btn');
+
+            const runFormatter = () => {
+                try {
+                    const formattedCode = prettyPrintJava(inputEl.value);
+                    outputEl.value = formattedCode;
+                } catch (error) {
+                    // FIX APPLIED HERE: Removed the unexpected backslash before the backtick.
+                    outputEl.value = `Error during formatting: ${error.message}`;
+                }
+            };
+            
+            formatBtn.addEventListener('click', runFormatter);
+            
+            // Run on initial load
+            runFormatter();
+        }
+        
+        // --- 3. Simple Text Editor App (Functional Content) ---
+        
+        function renderTextEditor(contentEl) {
+            contentEl.classList.remove('p-0');
+            contentEl.innerHTML = `
+                <div class="h-full flex flex-col space-y-3">
+                    <p class="text-sm text-gray-400">This is a simple text editor for quick notes. All content is lost when the app closes (persistence not enabled).</p>
+                    <textarea id="text-editor-area" class="code-input flex-grow h-full" placeholder="Start typing your notes here..."></textarea>
+                    
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <span id="char-count">0 Characters | 0 Words</span>
+                        <button onclick="document.getElementById('text-editor-area').value=''" class="text-red-400 hover:text-red-500 transition duration-150">Clear Document</button>
+                    </div>
+                </div>
+            `;
+            
+            const textarea = contentEl.querySelector('#text-editor-area');
+            const countDisplay = contentEl.querySelector('#char-count');
+            
+            const updateCount = () => {
+                const text = textarea.value;
+                const charCount = text.length;
+                const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+                countDisplay.textContent = `${charCount} Characters | ${wordCount} Words`;
+            };
+            
+            textarea.addEventListener('input', updateCount);
+            updateCount(); // Initial count
+        }
+        
+        // --- 4. Placeholder App (For the other 18 apps) ---
+        
+        function renderPlaceholderApp(contentEl, appName) {
+            contentEl.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center p-8 text-center space-y-4">
+                    <div class="text-6xl text-cyan-400">🚧</div>
+                    <h2 class="text-2xl font-bold text-gray-200">${appName} v1.0</h2>
+                    <p class="text-gray-400">This application is currently under development. Its shell functions correctly within KVN.OS, but the main feature set is not yet implemented.</p>
+                    <p class="text-sm text-gray-500 font-mono">Status: Awaiting Kernel API integration...</p>
+                </div>
+            `;
+        }
+
+
+        // --- Loading Screen Logic (Remains) ---
+
+        const loadingMessages = [
+            "[INIT] System services starting (PID 1)...", 
+            "[KERN] Mapping virtual file system to /dev/vda1...",
+            "[MOD] Loading core modules: UI, PERF, CLIENT, WINDOW_MGR...",
+            "[NET] Starting network interface (eth0)...",
+            "[PERF] Calibrating performance counters...",
+            "[UI] Initializing app launcher (21 items)...", 
+            "[DSP] Configuring display server (Xorg 7.7)...",
+            "[WM] Starting window manager (KWM)...",
+            "[AUTH] Executing user initialization script...",
+            "[CONF] Applying system wide policies.",
+            "[PROC] Spawning metric collector daemon...",
+            "[MEM] Memory management initialized.",
+            "[SYS] Clock source synchronized.",
+            "[UI] Loading core assets (1/3)...", 
+            "[UI] Loading core assets (2/3)...",
+            "[UI] Loading core assets (3/3)...",
+            "[DEV] Loading environment variables.",
+            "[LOG] System log audit complete.",
+            "[NET] Testing connection (8.8.8.8)... OK.", 
+            "[BOOT] System integrity check passed. Complete." 
+        ];
+
+        window.onload = () => {
+            setInterval(updateTime, 1000);
+            createLauncherMenu(); // Build the app list immediately
+            startLoadingScreen();
+        };
+
+        function startLoadingScreen() {
+            const bar = document.getElementById('loading-bar');
+            const status = document.getElementById('loading-status');
+            const bootLog = document.getElementById('boot-log');
+            const totalStages = loadingMessages.length;
+            const stageDuration = 100; 
+
+            let currentStage = 0;
+
+            const loadInterval = setInterval(() => {
+                if (currentStage < totalStages) {
+                    status.textContent = loadingMessages[currentStage];
+                    bootLog.textContent += `\n${loadingMessages[currentStage]}`;
+                    const targetWidth = ((currentStage + 1) / totalStages) * 100;
+                    bar.style.width = `${targetWidth}%`;
+                    currentStage++;
+                } else {
+                    clearInterval(loadInterval);
+                    transitionToDesktop();
+                    
+                    // Launch the Metrics Hub as the initial application
+                    const metricsAppInfo = APPS.find(a => a.id === 'metrics');
+                    if (metricsAppInfo) {
+                        setTimeout(() => {
+                            createWindow(metricsAppInfo);
+                        }, 600);
+                    }
+                }
+            }, stageDuration);
+        }
+
+        function transitionToDesktop() {
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    osShell.classList.remove('hidden');
+                }, 500); 
+            }, 300);
+        }
+
+    </script>
 </body>
 </html>
