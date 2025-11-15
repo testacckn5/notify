@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KVN.OS Shell</title>
+    <title>KVN.OS Shell - Enhanced</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -56,11 +56,11 @@
             overflow: auto;
         }
         
-        /* 2. METRICS HUB STYLES (Retained) */
+        /* 2. METRICS HUB STYLES */
         .metric-card {
-            background-color: #1a2333; /* Slightly lighter for contrast inside window */
+            background-color: #1a2333; 
             border: 1px solid #334155;
-            box-shadow: none; /* Removed shadow on inner cards */
+            box-shadow: none; 
             transition: none;
         }
         .metric-value {
@@ -86,7 +86,7 @@
             transition: width 0.3s ease-out;
         }
 
-        /* 3. LOADING SCREEN STYLES (Retained) */
+        /* 3. LOADING SCREEN STYLES */
         .loading-bar-inner {
             background-color: var(--accent-cyan);
             transition: width 0.18s linear;
@@ -107,6 +107,70 @@
             background-color: #0f172a;
             border: 1px solid #334155;
             resize: none;
+        }
+
+        /* 5. CALCULATOR STYLES */
+        .calc-display {
+            background-color: #000;
+            color: white;
+            padding: 1rem;
+            font-size: 2.5rem;
+            text-align: right;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-bottom: 0.5rem;
+            height: 70px;
+        }
+        .calc-button {
+            background-color: #334155;
+            color: var(--text-color);
+            padding: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: background-color 0.15s;
+        }
+        .calc-button:hover {
+            background-color: #475569;
+        }
+        .calc-op {
+            background-color: #06b6d4; /* Cyan */
+        }
+        .calc-op:hover {
+            background-color: #0891b2;
+        }
+        .calc-eq {
+            background-color: #4ade80; /* Green */
+            color: #0f172a;
+        }
+        .calc-eq:hover {
+            background-color: #22c55e;
+        }
+        
+        /* 6. TODO LIST STYLES */
+        .todo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        .todo-text {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .todo-done .todo-text {
+            text-decoration: line-through;
+            color: #64748b; /* Slate 500 */
+        }
+        .todo-delete-btn {
+            color: #ef4444; /* Red */
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .todo-delete-btn:hover {
+            opacity: 1;
         }
     </style>
 </head>
@@ -188,23 +252,24 @@
         let frameCount = 0;
         let zIndexCounter = 10;
         let isMetricsLoopRunning = false;
-        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics' } }
+        // Updated activeWindows to store minimized status
+        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics', isMinimized: false } }
 
-        // --- APPS Definition (21 Applications Total) ---
+        // --- APPS Definition (Reordered working apps to the top) ---
         const APPS = [
             { id: 'metrics', name: 'Dev Metrics Hub', icon: '📈', content: 'metrics', width: 900, height: 600, x: 50, y: 50 },
             { id: 'prettyprint', name: 'Java Pretty Printer', icon: '💻', content: 'prettyprinter', width: 600, height: 450, x: 100, y: 100 },
-            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350, x: 150, y: 150 },
+            { id: 'music', name: 'Music Player', icon: '🎵', content: 'musicplayer', width: 450, height: 500, x: 150, y: 150 },
+            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'calculator', width: 320, height: 480, x: 200, y: 200 },
+            { id: 'todo', name: 'To Do List', icon: '✅', content: 'todolist', width: 400, height: 550, x: 250, y: 250 },
             
-            // 18 Placeholder Apps to meet the "20 other apps" request
+            // Remaining Placeholder Apps
+            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350 },
             { id: 'calendar', name: 'Calendar', icon: '📅', content: 'placeholder', width: 400, height: 300 },
             { id: 'settings', name: 'System Settings', icon: '⚙️', content: 'placeholder', width: 450, height: 400 },
             { id: 'filemgr', name: 'File Manager', icon: '📁', content: 'placeholder', width: 700, height: 500 },
-            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'placeholder', width: 300, height: 400 },
-            { id: 'music', name: 'Music Player', icon: '🎵', content: 'placeholder', width: 400, height: 200 },
             { id: 'browser', name: 'Web Browser', icon: '🌐', content: 'placeholder', width: 800, height: 600 },
             { id: 'chat', name: 'Chat Client', icon: '💬', content: 'placeholder', width: 500, height: 600 },
-            { id: 'todo', name: 'To Do List', icon: '✅', content: 'placeholder', width: 350, height: 500 },
             { id: 'paint', name: 'Image Painter', icon: '🎨', content: 'placeholder', width: 700, height: 600 },
             { id: 'map', name: 'Map Viewer', icon: '🗺️', content: 'placeholder', width: 600, height: 400 },
             { id: 'terminal', name: 'Legacy Terminal', icon: '📟', content: 'placeholder', width: 650, height: 450 },
@@ -240,13 +305,16 @@
                 document.getElementById('metric-time-utc').textContent = now.toUTCString().split(' ')[4];
                 document.getElementById('metric-date-local').textContent = now.toLocaleDateString();
                 document.getElementById('metric-timezone').textContent = now.toLocaleTimeString('en-us',{timeZoneName:'short'}).split(' ')[2];
-                document.getElementById('metric-app-count').textContent = Object.keys(activeWindows).length;
+                document.getElementById('metric-app-count').textContent = Object.values(activeWindows).filter(w => !w.isMinimized).length;
             }
         }
         
         // --- OS SHELL: Window Management ---
 
         function focusWindow(windowEl) {
+            // Check if the element exists and is not minimized
+            if (!windowEl || windowEl.classList.contains('minimized')) return;
+
             // Unfocus all windows
             document.querySelectorAll('.os-window').forEach(win => {
                 win.classList.remove('focused');
@@ -256,6 +324,29 @@
             windowEl.classList.add('focused');
             zIndexCounter++;
             windowEl.style.zIndex = zIndexCounter;
+        }
+
+        // NEW: Minimize function
+        function minimizeWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
+
+            windowData.element.classList.add('minimized');
+            windowData.element.style.display = 'none'; // Hide it
+            windowData.isMinimized = true;
+            updateRunningAppsList();
+        }
+
+        // NEW: Restore function (called from taskbar)
+        function restoreWindow(instanceId) {
+            const windowData = activeWindows[instanceId];
+            if (!windowData) return;
+
+            windowData.element.classList.remove('minimized');
+            windowData.element.style.display = 'block'; // Show it
+            windowData.isMinimized = false;
+            focusWindow(windowData.element);
+            updateRunningAppsList();
         }
 
         function closeWindow(instanceId) {
@@ -282,10 +373,12 @@
                 let maxZIndex = -1;
                 let topWindow = null;
                 remainingWindows.forEach(win => {
-                    const z = parseInt(win.style.zIndex);
-                    if (z > maxZIndex) {
-                        maxZIndex = z;
-                        topWindow = win;
+                    if (!win.classList.contains('minimized')) {
+                        const z = parseInt(win.style.zIndex || 0);
+                        if (z > maxZIndex) {
+                            maxZIndex = z;
+                            topWindow = win;
+                        }
                     }
                 });
                 if (topWindow) focusWindow(topWindow);
@@ -313,6 +406,11 @@
                         <span class="font-bold">${appInfo.name}</span>
                     </span>
                     <div class="flex space-x-1">
+                        <!-- Minimize Button -->
+                        <button onclick="minimizeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center transition duration-150">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
+                        </button>
+                        <!-- Close Button -->
                         <button onclick="closeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition duration-150">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                         </button>
@@ -333,7 +431,7 @@
             focusWindow(windowEl);
             
             // Register and render content
-            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id };
+            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id, isMinimized: false };
             renderAppContent(instanceId, appInfo.content);
             updateRunningAppsList();
         }
@@ -414,26 +512,40 @@
             runningAppsContainer.innerHTML = '';
             
             // Group by app ID (in case multiple instances are open)
-            const runningAppIds = Object.values(activeWindows).map(w => w.appId);
-            const uniqueAppIds = [...new Set(runningAppIds)];
+            const runningAppInstances = Object.values(activeWindows);
+            const uniqueAppIds = [...new Set(runningAppInstances.map(w => w.appId))];
             
             uniqueAppIds.forEach(appId => {
                 const appInfo = APPS.find(app => app.id === appId);
+                const instances = runningAppInstances.filter(w => w.appId === appId);
+                const isMinimized = instances.every(w => w.isMinimized);
+
                 const button = document.createElement('button');
-                button.className = 'taskbar-item bg-cyan-800 hover:bg-cyan-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2 border border-cyan-500';
+                
+                // Color change if all instances are minimized
+                const baseClasses = 'taskbar-item px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2';
+                button.className = isMinimized 
+                    ? baseClasses + ' bg-gray-700 hover:bg-gray-600 text-gray-400 border border-gray-500' 
+                    : baseClasses + ' bg-cyan-800 hover:bg-cyan-700 text-white border border-cyan-500';
+
                 button.innerHTML = `<span class="text-lg leading-none">${appInfo.icon}</span><span>${appInfo.name}</span>`;
                 
-                // Clicking running app button focuses the top window of that type
+                // Clicking running app button restores/focuses
                 button.onclick = () => {
-                    const instances = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
-                    if (instances.length > 0) {
-                        // Focus the last opened/highest Z-index window of this app
-                        const topInstance = instances.reduce((a, b) => {
+                    const instancesKeys = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
+                    if (instancesKeys.length > 0) {
+                        const topInstanceKey = instancesKeys.reduce((a, b) => {
                             const zA = parseInt(activeWindows[a].element.style.zIndex || 0);
                             const zB = parseInt(activeWindows[b].element.style.zIndex || 0);
                             return zA > zB ? a : b;
                         });
-                        focusWindow(activeWindows[topInstance].element);
+                        
+                        const topWindowData = activeWindows[topInstanceKey];
+                        if (topWindowData.isMinimized) {
+                            restoreWindow(topInstanceKey);
+                        } else {
+                            focusWindow(topWindowData.element);
+                        }
                     }
                 };
                 runningAppsContainer.appendChild(button);
@@ -445,9 +557,14 @@
         function renderAppContent(instanceId, contentType) {
             const contentEl = document.getElementById(`content-${instanceId}`);
             if (!contentEl) return;
+            
+            // Clear content and ensure padding is correct before rendering
+            contentEl.innerHTML = '';
+            contentEl.classList.add('p-4'); 
 
             switch (contentType) {
                 case 'metrics':
+                    contentEl.classList.remove('p-4'); // Metrics uses its own internal padding
                     renderMetricsApp(contentEl);
                     if (!isMetricsLoopRunning) {
                         startMetricsLoop();
@@ -455,6 +572,15 @@
                     break;
                 case 'prettyprinter':
                     renderPrettyPrinter(contentEl);
+                    break;
+                case 'musicplayer':
+                    renderMusicPlayer(contentEl);
+                    break;
+                case 'calculator':
+                    renderCalculator(contentEl, instanceId); // Pass instanceId for state isolation
+                    break;
+                case 'todolist':
+                    renderToDoList(contentEl, instanceId);
                     break;
                 case 'texteditor':
                     renderTextEditor(contentEl);
@@ -467,8 +593,8 @@
         }
         
         // --- 1. Dev Metrics Hub (Metrics Content) ---
-
-        // Helper to get element by ID within the current window instance
+        // (Metric functions are retained for brevity in this block, but are fully present in the final code)
+        
         function getMetricEl(id) {
             const windowData = Object.values(activeWindows).find(w => w.appId === 'metrics');
             if (!windowData) return null;
@@ -476,8 +602,8 @@
         }
 
         function renderMetricsApp(contentEl) {
-            // NOTE: The HTML structure for the metrics dashboard is moved here
-            contentEl.classList.add('p-0'); // Remove padding from content container for full-width grid
+            // ... (Metrics HTML template is extensive but omitted here for focus on new apps)
+            // The original HTML is complex and remains the same.
             contentEl.innerHTML = `
                 <main class="h-full w-full overflow-y-auto p-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -709,6 +835,7 @@
         let usedRAM = 6.4; 
         let batteryPercent = 92; 
 
+        // Retained Metrics helper functions (getClientInfo, getDisplayMetrics, etc.)
         function getClientInfo() {
             const ua = navigator.userAgent;
             let browser = 'Unknown', version = 'N/A', osName = 'Unknown', osVersion = 'N/A';
@@ -875,15 +1002,13 @@
              window.addEventListener('mousemove', updateMousePosition);
              requestAnimationFrame(metricsLoop);
         }
+
         
-        // --- 2. Java Pretty Printer App (Functional Content) ---
-        
+        // --- 2. Java Pretty Printer App ---
         function prettyPrintJava(code) {
-            // 1. Normalize spaces around delimiters
+            // Logic remains the same
             code = code.replace(/([\(\)\{\}\[\];,=])/g, ' $1 ');
-            // 2. Collapse multiple spaces
             code = code.replace(/\s+/g, ' ');
-            // 3. Remove space before specific punctuation (e.g., semi-colon, comma)
             code = code.replace(/\s*([,;])\s*/g, '$1');
             
             let indent = 0;
@@ -893,24 +1018,19 @@
             for (const line of lines) {
                 let trimmedLine = line.trim();
 
-                // 4. Decrease indent for closing braces
                 if (trimmedLine.startsWith('}') || trimmedLine.startsWith(']') || trimmedLine.startsWith(')')) {
                     indent = Math.max(0, indent - 1);
                 }
 
-                // 5. Add indentation
                 result += '    '.repeat(indent) + trimmedLine;
 
-                // 6. Increase indent for opening braces
-                if (trimmedLine.endsWith('{') || trimmedLine.endsWith('[') || trimmedLine.endsWith('(') && !trimmedLine.endsWith(';')) {
+                if (trimmedLine.endsWith('{') || trimmedLine.endsWith('[') || (trimmedLine.endsWith('(') && !trimmedLine.endsWith(';'))) {
                     indent++;
                 }
                 
-                // 7. Newline only if not the last line
                 result += '\n';
             }
             
-            // Clean up unnecessary blank lines
             return result.replace(/\n\s*\n/g, '\n').trim();
         }
         
@@ -926,7 +1046,6 @@
         `;
 
         function renderPrettyPrinter(contentEl) {
-            contentEl.classList.remove('p-0');
             contentEl.innerHTML = `
                 <div class="h-full flex flex-col space-y-3">
                     <p class="text-sm text-gray-400">Input unformatted Java code, then click 'Format Code' to apply indentation and spacing rules.</p>
@@ -948,7 +1067,6 @@
                 </div>
             `;
             
-            // Setup functionality
             const inputEl = contentEl.querySelector('#pp-input');
             const outputEl = contentEl.querySelector('#pp-output');
             const formatBtn = contentEl.querySelector('#pp-format-btn');
@@ -958,21 +1076,269 @@
                     const formattedCode = prettyPrintJava(inputEl.value);
                     outputEl.value = formattedCode;
                 } catch (error) {
-                    // FIX APPLIED HERE: Removed the unexpected backslash before the backtick.
                     outputEl.value = `Error during formatting: ${error.message}`;
                 }
             };
             
             formatBtn.addEventListener('click', runFormatter);
-            
-            // Run on initial load
             runFormatter();
         }
+
+        // --- 3. Music Player App (New Functional Content) ---
+        // Default ambient track: Lofi/Chill (royalty-free source)
+        const DEFAULT_YT_ID = 'jfKfPfyJRdk'; 
+
+        function renderMusicPlayer(contentEl) {
+            contentEl.innerHTML = `
+                <div class="h-full flex flex-col space-y-4">
+                    <p class="text-sm text-gray-400">Embed a YouTube video ID below. Note: Autoplay may be restricted by your browser.</p>
+
+                    <!-- YouTube Iframe Container (Responsive aspect ratio) -->
+                    <div class="relative w-full" style="padding-top: 56.25%;"> 
+                        <iframe id="youtube-embed" 
+                                class="absolute top-0 left-0 w-full h-full rounded-lg shadow-xl"
+                                src="https://www.youtube.com/embed/${DEFAULT_YT_ID}?autoplay=0&controls=1&mute=0&rel=0" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+
+                    <!-- Input for new URL -->
+                    <div class="flex space-x-2">
+                        <input id="yt-id-input" type="text" value="${DEFAULT_YT_ID}" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-cyan-500" placeholder="Enter YouTube Video ID (e.g., jfKfPfyJRdk)">
+                        <button id="yt-load-btn" class="flex-shrink-0 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                            Load
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 text-center">Video ID is the string after 'v=' in the URL.</p>
+                </div>
+            `;
+
+            const inputEl = contentEl.querySelector('#yt-id-input');
+            const loadBtn = contentEl.querySelector('#yt-load-btn');
+            const iframe = contentEl.querySelector('#youtube-embed');
+
+            loadBtn.addEventListener('click', () => {
+                const videoId = inputEl.value.trim();
+                if (videoId) {
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&mute=0&rel=0`;
+                } else {
+                    showMessage("Please enter a valid YouTube Video ID.");
+                }
+            });
+        }
         
-        // --- 3. Simple Text Editor App (Functional Content) ---
+        // --- 4. Calculator App (New Functional Content) ---
+
+        // Local state for the calculator (stored temporarily in a map)
+        const calculatorStates = {}; 
         
+        function getCalcState(instanceId) {
+            if (!calculatorStates[instanceId]) {
+                calculatorStates[instanceId] = {
+                    display: '0',
+                    currentValue: null,
+                    operator: null,
+                    waitingForNewNumber: true
+                };
+            }
+            return calculatorStates[instanceId];
+        }
+
+        function renderCalculator(contentEl, instanceId) {
+            getCalcState(instanceId); // Initialize state
+
+            contentEl.innerHTML = `
+                <div class="flex flex-col h-full">
+                    <div id="calc-display-${instanceId}" class="calc-display">0</div>
+                    <div class="grid grid-cols-4 gap-2 flex-grow">
+                        <!-- Row 1 -->
+                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="clear" data-instance="${instanceId}">AC</button>
+                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="sign" data-instance="${instanceId}">±</button>
+                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="percent" data-instance="${instanceId}">%</button>
+                        <button class="calc-button calc-op" data-type="operator" data-op="/" data-instance="${instanceId}">÷</button>
+                        
+                        <!-- Row 2 -->
+                        <button class="calc-button" data-type="number" data-num="7" data-instance="${instanceId}">7</button>
+                        <button class="calc-button" data-type="number" data-num="8" data-instance="${instanceId}">8</button>
+                        <button class="calc-button" data-type="number" data-num="9" data-instance="${instanceId}">9</button>
+                        <button class="calc-button calc-op" data-type="operator" data-op="*" data-instance="${instanceId}">×</button>
+                        
+                        <!-- Row 3 -->
+                        <button class="calc-button" data-type="number" data-num="4" data-instance="${instanceId}">4</button>
+                        <button class="calc-button" data-type="number" data-num="5" data-instance="${instanceId}">5</button>
+                        <button class="calc-button" data-type="number" data-num="6" data-instance="${instanceId}">6</button>
+                        <button class="calc-button calc-op" data-type="operator" data-op="-" data-instance="${instanceId}">-</button>
+                        
+                        <!-- Row 4 -->
+                        <button class="calc-button" data-type="number" data-num="1" data-instance="${instanceId}">1</button>
+                        <button class="calc-button" data-type="number" data-num="2" data-instance="${instanceId}">2</button>
+                        <button class="calc-button" data-type="number" data-num="3" data-instance="${instanceId}">3</button>
+                        <button class="calc-button calc-op" data-type="operator" data-op="+" data-instance="${instanceId}">+</button>
+                        
+                        <!-- Row 5 -->
+                        <button class="calc-button col-span-2" data-type="number" data-num="0" data-instance="${instanceId}">0</button>
+                        <button class="calc-button" data-type="number" data-num="." data-instance="${instanceId}">.</button>
+                        <button class="calc-button calc-eq" data-type="equals" data-instance="${instanceId}">=</button>
+                    </div>
+                </div>
+            `;
+
+            contentEl.addEventListener('click', (e) => handleCalcClick(e.target));
+        }
+
+        function handleCalcClick(target) {
+            const type = target.dataset.type;
+            const instanceId = target.dataset.instance;
+            if (!type || !instanceId) return;
+
+            const state = getCalcState(instanceId);
+            const displayEl = document.getElementById(`calc-display-${instanceId}`);
+
+            if (type === 'number') {
+                const num = target.dataset.num;
+                if (state.waitingForNewNumber) {
+                    state.display = (num === '.') ? '0.' : num;
+                    state.waitingForNewNumber = false;
+                } else if (num === '.') {
+                    if (!state.display.includes('.')) {
+                        state.display += '.';
+                    }
+                } else {
+                    state.display = state.display === '0' ? num : state.display + num;
+                }
+            } else if (type === 'operator') {
+                if (state.currentValue === null || state.operator === null) {
+                    state.currentValue = parseFloat(state.display);
+                } else if (!state.waitingForNewNumber) {
+                    // Calculate intermediate result
+                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
+                    state.display = state.currentValue.toString();
+                }
+                state.operator = target.dataset.op;
+                state.waitingForNewNumber = true;
+            } else if (type === 'equals') {
+                if (state.currentValue !== null && state.operator !== null && !state.waitingForNewNumber) {
+                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
+                    state.display = state.currentValue.toString();
+                    state.operator = null;
+                    state.waitingForNewNumber = true;
+                }
+            } else if (type === 'clear') {
+                state.display = '0';
+                state.currentValue = null;
+                state.operator = null;
+                state.waitingForNewNumber = true;
+            } else if (type === 'sign') {
+                state.display = (parseFloat(state.display) * -1).toString();
+            } else if (type === 'percent') {
+                state.display = (parseFloat(state.display) / 100).toString();
+            }
+
+            displayEl.textContent = state.display;
+        }
+
+        function performCalculation(val1, val2, op) {
+            val1 = parseFloat(val1);
+            val2 = parseFloat(val2);
+            switch (op) {
+                case '+': return val1 + val2;
+                case '-': return val1 - val2;
+                case '*': return val1 * val2;
+                case '/': return val1 / val2;
+                default: return val2;
+            }
+        }
+
+        // --- 5. To Do List App (New Functional Content) ---
+
+        const todoStates = {}; // { instanceId: [ { text: '...', done: false } ] }
+
+        function getTodoState(instanceId) {
+            if (!todoStates[instanceId]) {
+                todoStates[instanceId] = [
+                    { id: Date.now() + 1, text: 'Check out the Dev Metrics Hub 📈', done: false },
+                    { id: Date.now() + 2, text: 'Test the new Calculator 🧮', done: false },
+                    { id: Date.now() + 3, text: 'Try embedding a new YouTube music ID', done: true },
+                ];
+            }
+            return todoStates[instanceId];
+        }
+
+        function renderToDoList(contentEl, instanceId) {
+            const state = getTodoState(instanceId);
+
+            contentEl.innerHTML = `
+                <div class="h-full flex flex-col space-y-4">
+                    <p class="text-sm text-gray-400">Manage your quick development tasks.</p>
+
+                    <!-- Input Area -->
+                    <div class="flex space-x-2 flex-shrink-0">
+                        <input id="todo-input-${instanceId}" type="text" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-green-500" placeholder="New task...">
+                        <button id="todo-add-btn-${instanceId}" class="flex-shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
+                            Add
+                        </button>
+                    </div>
+
+                    <!-- To Do List -->
+                    <div id="todo-list-${instanceId}" class="flex-grow overflow-y-auto">
+                        <!-- Items inserted here -->
+                    </div>
+                </div>
+            `;
+            
+            const inputEl = contentEl.querySelector(`#todo-input-${instanceId}`);
+            const listEl = contentEl.querySelector(`#todo-list-${instanceId}`);
+            
+            const renderList = () => {
+                listEl.innerHTML = state.map(item => `
+                    <div class="todo-item ${item.done ? 'todo-done' : ''}" data-id="${item.id}">
+                        <span class="todo-text flex-grow">${item.text}</span>
+                        <button class="todo-delete-btn" data-action="delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `).join('');
+            };
+
+            const addTask = () => {
+                const text = inputEl.value.trim();
+                if (text) {
+                    state.push({ id: Date.now(), text, done: false });
+                    inputEl.value = '';
+                    renderList();
+                }
+            };
+            
+            contentEl.querySelector(`#todo-add-btn-${instanceId}`).addEventListener('click', addTask);
+            inputEl.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addTask();
+            });
+
+            listEl.addEventListener('click', (e) => {
+                const itemEl = e.target.closest('.todo-item');
+                const actionBtn = e.target.closest('[data-action="delete"]');
+                if (!itemEl) return;
+                
+                const id = parseInt(itemEl.dataset.id);
+                const index = state.findIndex(item => item.id === id);
+
+                if (actionBtn) {
+                    // Delete action
+                    state.splice(index, 1);
+                } else {
+                    // Toggle done status
+                    state[index].done = !state[index].done;
+                }
+                renderList();
+            });
+
+            renderList();
+        }
+
+        // --- 6. Simple Text Editor App ---
         function renderTextEditor(contentEl) {
-            contentEl.classList.remove('p-0');
             contentEl.innerHTML = `
                 <div class="h-full flex flex-col space-y-3">
                     <p class="text-sm text-gray-400">This is a simple text editor for quick notes. All content is lost when the app closes (persistence not enabled).</p>
@@ -999,8 +1365,7 @@
             updateCount(); // Initial count
         }
         
-        // --- 4. Placeholder App (For the other 18 apps) ---
-        
+        // --- 7. Placeholder App ---
         function renderPlaceholderApp(contentEl, appName) {
             contentEl.innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center p-8 text-center space-y-4">
