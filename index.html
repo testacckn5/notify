@@ -3,1452 +3,1258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KVN.OS Shell - Enhanced</title>
-    <!-- Load Tailwind CSS -->
+    <title>Kanvas Desktop OS</title>
+    <!-- Load Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for the professional, dark dev theme */
-        :root {
-            --primary-bg: #111827; /* Deep Black */
-            --accent-cyan: #06b6d4; /* Vibrant Cyan for highlights */
-            --accent-green: #4ade80; /* Neon Green for status */
-            --text-color: #e5e7eb; /* Off-White for readability */
-            --card-bg: #1e293b; /* Slate 800 for card background */
-            font-family: 'Inter', sans-serif;
-        }
-
+        /* Custom font for system UI */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #ffffff;
             height: 100vh;
-            width: 100vw;
-            overflow: hidden; 
-            background-color: var(--primary-bg);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll */
         }
-        
-        /* 1. KVN.OS WINDOW STYLES */
-        .os-window {
+        #desktop {
             position: absolute;
-            background-color: var(--card-bg);
-            border: 1px solid #334155;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-            border-radius: 0.5rem;
-            overflow: hidden;
-            min-width: 300px;
-            min-height: 200px;
-            transition: box-shadow 0.1s;
-        }
-        .os-window.focused {
-            z-index: 50; /* Z-index managed in JS, but a base is needed */
-            box-shadow: 0 0 0 2px var(--accent-cyan);
-        }
-        
-        .window-title-bar {
-            cursor: grab;
-            background-color: #0f172a; /* Darker header */
-            border-bottom: 1px solid #334155;
-        }
-        
-        .window-content {
-            padding: 1rem;
-            height: calc(100% - 40px); /* Adjust for title bar height */
-            overflow: auto;
-        }
-        
-        /* 2. METRICS HUB STYLES */
-        .metric-card {
-            background-color: #1a2333; 
-            border: 1px solid #334155;
-            box-shadow: none; 
-            transition: none;
-        }
-        .metric-value {
-            color: var(--accent-cyan);
-            font-family: 'Consolas', 'Monospace', monospace;
-            font-weight: 700;
-        }
-        .metric-label {
-            color: #94a3b8;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .progress-bar {
-            height: 6px;
-            background-color: #475569;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background-color: var(--accent-green);
-            transition: width 0.3s ease-out;
-        }
-
-        /* 3. LOADING SCREEN STYLES */
-        .loading-bar-inner {
-            background-color: var(--accent-cyan);
-            transition: width 0.18s linear;
-        }
-        .loading-screen-text {
-            font-family: 'Consolas', 'Monospace', monospace;
-            color: #9ca3af;
-        }
-        
-        /* 4. TEXTAREA / CODE STYLES */
-        textarea.code-input, textarea.code-output {
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            font-family: 'Consolas', 'Monospace', monospace;
-            font-size: 0.85rem;
-            color: var(--accent-green);
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            resize: none;
+            height: calc(100vh - 48px); /* Height minus taskbar */
+            /* Rebranded background */
+            background: #1f2937 url('https://placehold.co/1920x1080/1f2937/8b5cf6?text=Kanvas+Desktop') center center / cover;
         }
-
-        /* 5. CALCULATOR STYLES */
-        .calc-display {
-            background-color: #000;
-            color: white;
-            padding: 1rem;
-            font-size: 2.5rem;
-            text-align: right;
-            border-radius: 0.25rem;
-            overflow-x: auto;
-            white-space: nowrap;
-            margin-bottom: 0.5rem;
-            height: 70px;
+        .window {
+            position: absolute;
+            min-width: 250px;
+            min-height: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid #374151;
+            resize: both; /* Allow window resizing */
         }
-        .calc-button {
-            background-color: #334155;
-            color: var(--text-color);
-            padding: 1rem;
-            font-size: 1.25rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            transition: background-color 0.15s;
+        .window-header {
+            cursor: grab;
         }
-        .calc-button:hover {
-            background-color: #475569;
-        }
-        .calc-op {
-            background-color: #06b6d4; /* Cyan */
-        }
-        .calc-op:hover {
-            background-color: #0891b2;
-        }
-        .calc-eq {
-            background-color: #4ade80; /* Green */
-            color: #0f172a;
-        }
-        .calc-eq:hover {
-            background-color: #22c55e;
-        }
-        
-        /* 6. TODO LIST STYLES */
-        .todo-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #334155;
-        }
-        .todo-text {
+        .app-icon {
             cursor: pointer;
-            transition: color 0.2s;
+            transition: transform 0.1s;
         }
-        .todo-done .todo-text {
-            text-decoration: line-through;
-            color: #64748b; /* Slate 500 */
+        .app-icon:hover {
+            transform: scale(1.05);
         }
-        .todo-delete-btn {
-            color: #ef4444; /* Red */
-            opacity: 0.7;
-            transition: opacity 0.2s;
+        .terminal-text { color: #38a169; }
+        .error-text { color: #f56565; }
+        .prompt { color: #90cdf4; }
+        /* Custom scrollbar for the console output */
+        .console-output::-webkit-scrollbar { width: 8px; }
+        .console-output::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 4px; }
+        .console-output::-webkit-scrollbar-track { background-color: #1f2937; }
+        .file-icon {
+            cursor: pointer;
+            transition: background 0.1s;
         }
-        .todo-delete-btn:hover {
-            opacity: 1;
+        .file-icon:hover {
+            background-color: #374151;
+        }
+        /* Style for the embedded browser */
+        .browser-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
+<body>
 
-<body oncontextmenu="return false;">
-
-    <!-- 0. Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-gray-900 z-[200] flex flex-col items-center justify-center p-8 transition-opacity duration-500 ease-in-out opacity-100 overflow-hidden loading-screen-text">
-        <div class="text-3xl md:text-4xl font-mono font-semibold text-cyan-400 mb-12 text-center tracking-wider">
-            KVN.OS // INITIALIZING SHELL
-        </div>
-        <div class="w-full max-w-lg bg-gray-800 rounded h-1 border border-gray-700 overflow-hidden">
-            <div id="loading-bar" class="loading-bar-inner h-full" style="width: 0%;"></div>
-        </div>
-        <div id="loading-status" class="mt-8 text-sm font-mono p-2 text-gray-400">
-            [INIT] Initializing system services...
-        </div>
-        <div id="boot-log" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-700 text-xs font-mono opacity-20 whitespace-pre-wrap">
-            Loading kernel v5.18-dev...
-            Mounting root file system...
-        </div>
-    </div>
-    
-    <!-- 1. KVN.OS Shell (Desktop) -->
-    <div id="os-shell" class="flex flex-col flex-grow h-full w-full hidden">
-        
-        <!-- Application Window Container -->
-        <div id="window-container" class="flex-grow relative overflow-hidden">
-            <!-- Windows will be dynamically inserted here -->
-        </div>
-
-        <!-- 2. Taskbar / Dock -->
-        <footer id="taskbar" class="flex-shrink-0 w-full bg-gray-900 bg-opacity-90 backdrop-blur-sm p-2 shadow-2xl z-50 border-t border-gray-700">
-            <div class="flex justify-between items-center max-w-7xl mx-auto">
-                
-                <!-- Left Side: App Launcher (All 21 Apps) -->
-                <div class="dropdown relative">
-                    <button id="launcher-button" class="taskbar-item bg-gray-800 hover:bg-gray-700 text-white px-3 py-1 rounded transition duration-200 shadow-md font-semibold flex items-center space-x-2 border border-cyan-700/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Launcher</span>
-                    </button>
-
-                    <!-- Dropdown Menu for all 21 apps -->
-                    <div id="app-launcher-menu" class="hidden absolute bottom-full left-0 mb-2 w-64 bg-gray-800 rounded-lg shadow-xl p-2 border border-cyan-700 z-50">
-                        <!-- Content inserted by JS -->
-                    </div>
-                </div>
-                
-                <!-- Center: Running Apps Area -->
-                <div id="running-apps" class="flex space-x-2 mx-4">
-                    <!-- Running App buttons inserted here by JS -->
-                </div>
-
-                <!-- Right Side: Clock -->
-                <span id="time-display" class="taskbar-item bg-gray-800 text-sm text-gray-300 px-3 py-1 rounded font-mono"></span>
+    <!-- 1. The Desktop Area -->
+    <div id="desktop">
+        <!-- Desktop Icons for launching apps -->
+        <div class="p-4 space-y-4">
+            <div id="icon-explorer" class="app-icon w-20 text-center p-2 rounded-lg bg-black/30 hover:bg-black/50">
+                <!-- Lucide folder icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-yellow-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
+                <p class="text-xs mt-1">File Explorer</p>
             </div>
-        </footer>
+            <div id="icon-editor" class="app-icon w-20 text-center p-2 rounded-lg bg-black/30 hover:bg-black/50">
+                <!-- Lucide file-text icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-blue-400"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+                <p class="text-xs mt-1">Text Editor</p>
+            </div>
+            <div id="icon-browser" class="app-icon w-20 text-center p-2 rounded-lg bg-black/30 hover:bg-black/50">
+                <!-- Lucide globe icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-400"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12h20"></path></svg>
+                <p class="text-xs mt-1">Web Browser</p>
+            </div>
+            <div id="icon-terminal" class="app-icon w-20 text-center p-2 rounded-lg bg-black/30 hover:bg-black/50">
+                <!-- Lucide terminal icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-green-400"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" x2="20" y1="17" y2="17"></line></svg>
+                <p class="text-xs mt-1">Terminal</p>
+            </div>
+        </div>
+        <!-- Windows will be dynamically inserted here -->
     </div>
 
-
-    <!-- Custom Message Box for alerts/system notifications -->
-    <div id="message-box" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 p-6 rounded-lg shadow-2xl z-[100] border-t-2 border-cyan-500 text-center">
-        <p id="message-text" class="text-white mb-4 font-mono"></p>
-        <button onclick="hideMessage()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded font-semibold transition duration-200">Acknowledge</button>
+    <!-- 2. The Taskbar -->
+    <div id="taskbar" class="fixed bottom-0 left-0 right-0 h-12 bg-gray-800 border-t border-gray-700 flex justify-between items-center px-4 z-50">
+        <div id="taskbar-apps" class="flex space-x-2">
+            <!-- Running apps tabs will be inserted here -->
+        </div>
+        <div class="flex items-center space-x-4 text-xs">
+            <div id="taskbar-status" class="space-x-2 text-gray-400">
+                <span id="system-clock">Clock: 0</span>
+                <span id="ram-usage">RAM: 0/256 KB</span>
+                <span id="cpu-status" class="text-green-400">Idle</span>
+            </div>
+            <!-- Rebranded OS name -->
+            <div class="text-white font-semibold">Kanvas OS</div>
+        </div>
     </div>
 
+    <!-- JavaScript for the Kanvas OS Simulator -->
     <script>
-        // --- Globals ---
-        const osShell = document.getElementById('os-shell');
-        const loadingScreen = document.getElementById('loading-screen');
-        const windowContainer = document.getElementById('window-container');
-        const runningAppsContainer = document.getElementById('running-apps');
-        const appLauncherMenu = document.getElementById('app-launcher-menu');
-        const OS_START_TIME = Date.now();
-        
-        let lastFrameTime = performance.now();
-        let frameCount = 0;
-        let zIndexCounter = 10;
-        let isMetricsLoopRunning = false;
-        // Updated activeWindows to store minimized status
-        const activeWindows = {}; // { id: { element: windowElement, appId: 'metrics', isMinimized: false } }
-
-        // --- APPS Definition (Reordered working apps to the top) ---
-        const APPS = [
-            { id: 'metrics', name: 'Dev Metrics Hub', icon: '📈', content: 'metrics', width: 900, height: 600, x: 50, y: 50 },
-            { id: 'prettyprint', name: 'Java Pretty Printer', icon: '💻', content: 'prettyprinter', width: 600, height: 450, x: 100, y: 100 },
-            { id: 'music', name: 'Music Player', icon: '🎵', content: 'musicplayer', width: 450, height: 500, x: 150, y: 150 },
-            { id: 'calculator', name: 'Calculator', icon: '🧮', content: 'calculator', width: 320, height: 480, x: 200, y: 200 },
-            { id: 'todo', name: 'To Do List', icon: '✅', content: 'todolist', width: 400, height: 550, x: 250, y: 250 },
-            
-            // Remaining Placeholder Apps
-            { id: 'textedit', name: 'Simple Text Editor', icon: '📝', content: 'texteditor', width: 500, height: 350 },
-            { id: 'calendar', name: 'Calendar', icon: '📅', content: 'placeholder', width: 400, height: 300 },
-            { id: 'settings', name: 'System Settings', icon: '⚙️', content: 'placeholder', width: 450, height: 400 },
-            { id: 'filemgr', name: 'File Manager', icon: '📁', content: 'placeholder', width: 700, height: 500 },
-            { id: 'browser', name: 'Web Browser', icon: '🌐', content: 'placeholder', width: 800, height: 600 },
-            { id: 'chat', name: 'Chat Client', icon: '💬', content: 'placeholder', width: 500, height: 600 },
-            { id: 'paint', name: 'Image Painter', icon: '🎨', content: 'placeholder', width: 700, height: 600 },
-            { id: 'map', name: 'Map Viewer', icon: '🗺️', content: 'placeholder', width: 600, height: 400 },
-            { id: 'terminal', name: 'Legacy Terminal', icon: '📟', content: 'placeholder', width: 650, height: 450 },
-            { id: 'taskmgr', name: 'Task Manager', icon: '🛑', content: 'placeholder', width: 400, height: 550 },
-            { id: 'photo', name: 'Photo Viewer', icon: '🖼️', content: 'placeholder', width: 500, height: 400 },
-            { id: 'debugger', name: 'Code Debugger', icon: '🐞', content: 'placeholder', width: 700, height: 500 },
-            { id: 'network', name: 'Network Monitor', icon: '📡', content: 'placeholder', width: 550, height: 400 },
-            { id: 'logs', name: 'System Logs', icon: '📜', content: 'placeholder', width: 600, height: 400 },
-            { id: 'notes', name: 'Quick Notes', icon: '📌', content: 'placeholder', width: 350, height: 300 },
-            { id: 'games', name: 'Minesweeper', icon: '💣', content: 'placeholder', width: 350, height: 350 },
-        ];
-
-
-        // --- Utility Functions ---
-
-        function showMessage(message) {
-            document.getElementById('message-text').innerHTML = message;
-            document.getElementById('message-box').classList.remove('hidden');
-        }
-
-        function hideMessage() {
-            document.getElementById('message-box').classList.add('hidden');
-        }
-
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            const dateString = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
-            document.getElementById('time-display').textContent = `${dateString} | ${timeString}`;
-            
-            // Update app count metric (if metrics window is open)
-            if (activeWindows['metrics']) {
-                document.getElementById('metric-time-utc').textContent = now.toUTCString().split(' ')[4];
-                document.getElementById('metric-date-local').textContent = now.toLocaleDateString();
-                document.getElementById('metric-timezone').textContent = now.toLocaleTimeString('en-us',{timeZoneName:'short'}).split(' ')[2];
-                document.getElementById('metric-app-count').textContent = Object.values(activeWindows).filter(w => !w.isMinimized).length;
-            }
-        }
-        
-        // --- OS SHELL: Window Management ---
-
-        function focusWindow(windowEl) {
-            // Check if the element exists and is not minimized
-            if (!windowEl || windowEl.classList.contains('minimized')) return;
-
-            // Unfocus all windows
-            document.querySelectorAll('.os-window').forEach(win => {
-                win.classList.remove('focused');
-            });
-            
-            // Focus the clicked window
-            windowEl.classList.add('focused');
-            zIndexCounter++;
-            windowEl.style.zIndex = zIndexCounter;
-        }
-
-        // NEW: Minimize function
-        function minimizeWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            windowData.element.classList.add('minimized');
-            windowData.element.style.display = 'none'; // Hide it
-            windowData.isMinimized = true;
-            updateRunningAppsList();
-        }
-
-        // NEW: Restore function (called from taskbar)
-        function restoreWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            windowData.element.classList.remove('minimized');
-            windowData.element.style.display = 'block'; // Show it
-            windowData.isMinimized = false;
-            focusWindow(windowData.element);
-            updateRunningAppsList();
-        }
-
-        function closeWindow(instanceId) {
-            const windowData = activeWindows[instanceId];
-            if (!windowData) return;
-
-            // Remove window element
-            windowData.element.remove();
-            
-            // Stop metric loop if it was the metrics app being closed
-            if (windowData.appId === 'metrics' && Object.values(activeWindows).filter(w => w.appId === 'metrics').length === 1) {
-                isMetricsLoopRunning = false;
-            }
-
-            // Remove from active windows
-            delete activeWindows[instanceId];
-            
-            // Update running apps list in taskbar
-            updateRunningAppsList();
-
-            // Find the highest z-index and focus it
-            const remainingWindows = Object.values(activeWindows).map(w => w.element);
-            if (remainingWindows.length > 0) {
-                let maxZIndex = -1;
-                let topWindow = null;
-                remainingWindows.forEach(win => {
-                    if (!win.classList.contains('minimized')) {
-                        const z = parseInt(win.style.zIndex || 0);
-                        if (z > maxZIndex) {
-                            maxZIndex = z;
-                            topWindow = win;
-                        }
-                    }
-                });
-                if (topWindow) focusWindow(topWindow);
-            }
-        }
-
-        function createWindow(appInfo) {
-            // Generate a unique instance ID for this window
-            const instanceId = appInfo.id + '-' + Date.now();
-            
-            // --- 1. Create Window Element ---
-            const windowEl = document.createElement('div');
-            windowEl.id = instanceId;
-            windowEl.className = 'os-window focused';
-            windowEl.style.width = `${appInfo.width}px`;
-            windowEl.style.height = `${appInfo.height}px`;
-            windowEl.style.left = `${appInfo.x || (Math.random() * 100 + 50)}px`;
-            windowEl.style.top = `${appInfo.y || (Math.random() * 100 + 50)}px`;
-
-            // --- 2. Title Bar and Controls ---
-            windowEl.innerHTML = `
-                <div class="window-title-bar p-2 flex justify-between items-center text-sm text-gray-300">
-                    <span class="flex items-center space-x-2">
-                        <span class="text-lg leading-none">${appInfo.icon}</span>
-                        <span class="font-bold">${appInfo.name}</span>
-                    </span>
-                    <div class="flex space-x-1">
-                        <!-- Minimize Button -->
-                        <button onclick="minimizeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center transition duration-150">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
-                        </button>
-                        <!-- Close Button -->
-                        <button onclick="closeWindow('${instanceId}')" class="w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition duration-150">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="window-content" id="content-${instanceId}">
-                    <!-- App content inserted here -->
-                </div>
-            `;
-            
-            // --- 3. Dragging Logic ---
-            const titleBar = windowEl.querySelector('.window-title-bar');
-            titleBar.addEventListener('mousedown', (e) => startDrag(e, windowEl));
-            windowEl.addEventListener('mousedown', () => focusWindow(windowEl));
-            
-            // Add to the container and focus
-            windowContainer.appendChild(windowEl);
-            focusWindow(windowEl);
-            
-            // Register and render content
-            activeWindows[instanceId] = { element: windowEl, appId: appInfo.id, isMinimized: false };
-            renderAppContent(instanceId, appInfo.content);
-            updateRunningAppsList();
-        }
-
-        let dragState = { isDragging: false, activeWindow: null, offset: { x: 0, y: 0 } };
-
-        function startDrag(e, windowEl) {
-            e.preventDefault();
-            focusWindow(windowEl);
-            
-            dragState.isDragging = true;
-            dragState.activeWindow = windowEl;
-            dragState.offset.x = e.clientX - windowEl.offsetLeft;
-            dragState.offset.y = e.clientY - windowEl.offsetTop;
-
-            windowEl.style.cursor = 'grabbing';
-            windowEl.querySelector('.window-title-bar').style.cursor = 'grabbing';
-        }
-
-        function drag(e) {
-            if (!dragState.isDragging) return;
-            e.preventDefault();
-
-            const win = dragState.activeWindow;
-            const shellBounds = windowContainer.getBoundingClientRect();
-            
-            let newLeft = e.clientX - dragState.offset.x;
-            let newTop = e.clientY - dragState.offset.y;
-
-            // Boundary checks
-            newLeft = Math.max(0, Math.min(newLeft, shellBounds.width - win.offsetWidth));
-            newTop = Math.max(0, Math.min(newTop, shellBounds.height - win.offsetHeight));
-            
-            win.style.left = `${newLeft}px`;
-            win.style.top = `${newTop}px`;
-        }
-
-        function endDrag() {
-            if (dragState.isDragging) {
-                dragState.activeWindow.style.cursor = 'default';
-                dragState.activeWindow.querySelector('.window-title-bar').style.cursor = 'grab';
-                dragState.isDragging = false;
-                dragState.activeWindow = null;
-            }
-        }
-
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', endDrag);
-
-        // --- OS SHELL: Taskbar/Launcher Management ---
-
-        function toggleLauncherMenu() {
-            appLauncherMenu.classList.toggle('hidden');
-        }
-
-        document.getElementById('launcher-button').addEventListener('click', toggleLauncherMenu);
-        // Hide launcher when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!document.getElementById('launcher-button').contains(e.target) && !appLauncherMenu.contains(e.target)) {
-                appLauncherMenu.classList.add('hidden');
-            }
-        });
-
-        function createLauncherMenu() {
-            APPS.forEach(app => {
-                const button = document.createElement('button');
-                button.className = 'w-full text-left p-2 rounded flex items-center space-x-3 hover:bg-gray-700 transition duration-150';
-                button.innerHTML = `<span class="text-xl">${app.icon}</span> <span>${app.name}</span>`;
-                button.onclick = () => {
-                    createWindow(app);
-                    appLauncherMenu.classList.add('hidden');
-                };
-                appLauncherMenu.appendChild(button);
-            });
-        }
-
-        function updateRunningAppsList() {
-            runningAppsContainer.innerHTML = '';
-            
-            // Group by app ID (in case multiple instances are open)
-            const runningAppInstances = Object.values(activeWindows);
-            const uniqueAppIds = [...new Set(runningAppInstances.map(w => w.appId))];
-            
-            uniqueAppIds.forEach(appId => {
-                const appInfo = APPS.find(app => app.id === appId);
-                const instances = runningAppInstances.filter(w => w.appId === appId);
-                const isMinimized = instances.every(w => w.isMinimized);
-
-                const button = document.createElement('button');
-                
-                // Color change if all instances are minimized
-                const baseClasses = 'taskbar-item px-3 py-1 rounded transition duration-200 shadow-md font-semibold text-sm flex items-center space-x-2';
-                button.className = isMinimized 
-                    ? baseClasses + ' bg-gray-700 hover:bg-gray-600 text-gray-400 border border-gray-500' 
-                    : baseClasses + ' bg-cyan-800 hover:bg-cyan-700 text-white border border-cyan-500';
-
-                button.innerHTML = `<span class="text-lg leading-none">${appInfo.icon}</span><span>${appInfo.name}</span>`;
-                
-                // Clicking running app button restores/focuses
-                button.onclick = () => {
-                    const instancesKeys = Object.keys(activeWindows).filter(key => activeWindows[key].appId === appId);
-                    if (instancesKeys.length > 0) {
-                        const topInstanceKey = instancesKeys.reduce((a, b) => {
-                            const zA = parseInt(activeWindows[a].element.style.zIndex || 0);
-                            const zB = parseInt(activeWindows[b].element.style.zIndex || 0);
-                            return zA > zB ? a : b;
-                        });
-                        
-                        const topWindowData = activeWindows[topInstanceKey];
-                        if (topWindowData.isMinimized) {
-                            restoreWindow(topInstanceKey);
-                        } else {
-                            focusWindow(topWindowData.element);
-                        }
-                    }
-                };
-                runningAppsContainer.appendChild(button);
-            });
-        }
-        
-        // --- APP CONTENT RENDERING ---
-
-        function renderAppContent(instanceId, contentType) {
-            const contentEl = document.getElementById(`content-${instanceId}`);
-            if (!contentEl) return;
-            
-            // Clear content and ensure padding is correct before rendering
-            contentEl.innerHTML = '';
-            contentEl.classList.add('p-4'); 
-
-            switch (contentType) {
-                case 'metrics':
-                    contentEl.classList.remove('p-4'); // Metrics uses its own internal padding
-                    renderMetricsApp(contentEl);
-                    if (!isMetricsLoopRunning) {
-                        startMetricsLoop();
-                    }
-                    break;
-                case 'prettyprinter':
-                    renderPrettyPrinter(contentEl);
-                    break;
-                case 'musicplayer':
-                    renderMusicPlayer(contentEl);
-                    break;
-                case 'calculator':
-                    renderCalculator(contentEl, instanceId); // Pass instanceId for state isolation
-                    break;
-                case 'todolist':
-                    renderToDoList(contentEl, instanceId);
-                    break;
-                case 'texteditor':
-                    renderTextEditor(contentEl);
-                    break;
-                case 'placeholder':
-                default:
-                    renderPlaceholderApp(contentEl, APPS.find(a => a.id === activeWindows[instanceId].appId)?.name);
-                    break;
-            }
-        }
-        
-        // --- 1. Dev Metrics Hub (Metrics Content) ---
-        // (Metric functions are retained for brevity in this block, but are fully present in the final code)
-        
-        function getMetricEl(id) {
-            const windowData = Object.values(activeWindows).find(w => w.appId === 'metrics');
-            if (!windowData) return null;
-            return windowData.element.querySelector(`#${id}`);
-        }
-
-        function renderMetricsApp(contentEl) {
-            // ... (Metrics HTML template is extensive but omitted here for focus on new apps)
-            // The original HTML is complex and remains the same.
-            contentEl.innerHTML = `
-                <main class="h-full w-full overflow-y-auto p-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        
-                        <!-- Section 1: Core Performance -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-accent-green">PERFORMANCE TELEMETRY (9 Metrics)</h2>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-2xl" id="metric-fps">60</span><span class="text-gray-400 ml-1">FPS</span>
-                                    <div class="metric-label">Frame Rate</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-2xl" id="metric-heap-used">--</span>
-                                    <div class="metric-label">Used JS Heap (MB)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-heap-total">--</span>
-                                    <div class="metric-label">Total JS Heap (MB)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-time-origin">--</span>
-                                    <div class="metric-label">Time Origin (ms)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-time-paint">--</span>
-                                    <div class="metric-label">First Paint (ms)</div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-load-time">--</span>
-                                    <div class="metric-label">Load Time (ms, Mock)</div>
-                                </div>
-                                <div class="col-span-2 border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-uptime">--</span>
-                                    <div class="metric-label">Time Since Init (App Uptime)</div>
-                                </div>
-                                <div class="col-span-2 border-b border-gray-700 pb-2">
-                                    <span class="metric-value text-xl" id="metric-dns-lookup">--</span>
-                                    <div class="metric-label">DNS Lookup Time (ms, Mock)</div>
-                                </div>
-                                <div class="col-span-2">
-                                    <span class="metric-value text-xl" id="metric-memory-limit">--</span>
-                                    <div class="metric-label">Memory Limit (Approx)</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 2: Browser/Client Info -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-accent-cyan">CLIENT METADATA (8 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Browser / Version</div>
-                                    <span class="metric-value" id="metric-browser-name">--</span> / <span class="metric-value" id="metric-browser-version">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">OS Name / Version</div>
-                                    <span class="metric-value" id="metric-os-name">--</span> / <span class="metric-value" id="metric-os-version">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">User Agent (Truncated)</div>
-                                    <span class="metric-value text-xs" id="metric-user-agent">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Language / Online Status</div>
-                                    <span class="metric-value" id="metric-language">--</span> / <span class="metric-value" id="metric-online-status">--</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Cookies Enabled</div>
-                                    <span class="metric-value" id="metric-cookies-enabled">--</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 3: Hardware Status (MOCK) -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-red-400">DEVICE STATUS (MOCK) (10 Metrics)</h2>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Device Model / Arch</div>
-                                    <span class="metric-value" id="metric-device-model">KVN-M7 (Mock)</span> / <span class="metric-value" id="metric-cpu-arch">x86_64</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">CPU Cores (Logical)</div>
-                                    <span class="metric-value" id="metric-cpu-cores">8</span>
-                                </div>
-                                <div class="col-span-2 mb-2">
-                                    <div class="metric-label mb-1 flex justify-between">
-                                        <span>CPU Load</span>
-                                        <span class="metric-value" id="metric-cpu-load-val">45%</span>
-                                    </div>
-                                    <div class="progress-bar"><div id="metric-cpu-load-bar" class="progress-bar-fill" style="width: 45%;"></div></div>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Total RAM / Used RAM</div>
-                                    <span class="metric-value" id="metric-total-ram">16 GB</span> / <span class="metric-value" id="metric-used-ram">6.4 GB</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Screen Density (DPR) / Orientation</div>
-                                    <span class="metric-value" id="metric-dpr">--</span> / <span class="metric-value" id="metric-device-orientation">--</span>
-                                </div>
-                                <div class="col-span-2">
-                                    <div class="metric-label mb-1 flex justify-between">
-                                        <span>Battery Level <span class="text-sm" id="metric-battery-status">(-- charged)</span></span>
-                                        <span class="metric-value" id="metric-battery-percent">92%</span>
-                                    </div>
-                                    <div class="progress-bar bg-gray-600"><div id="metric-battery-bar" class="progress-bar-fill" style="width: 92%; background-color: #22c55e;"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Section 4: Display & Viewport -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-cyan-400">DISPLAY METRICS (7 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Screen Resolution</div>
-                                    <span class="metric-value" id="metric-screen-res">-- x --</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Viewport Size</div>
-                                    <span class="metric-value" id="metric-viewport-size">-- x --</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Current Orientation</div>
-                                    <span class="metric-value" id="metric-orientation">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Max Touch Points</div>
-                                    <span class="metric-value" id="metric-max-touch">--</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Color Depth</div>
-                                    <span class="metric-value" id="metric-color-depth">--</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 5: Network Status (Mostly Mock) -->
-                        <div class="col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-yellow-400">NETWORK (5 Metrics)</h2>
-                            <div class="space-y-3">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Connection Type</div>
-                                    <span class="metric-value" id="metric-network-type">WIFI (Mock)</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Downlink Speed (Mbps)</div>
-                                    <span class="metric-value" id="metric-downlink-speed">95.4</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">RTT (Round Trip Time)</div>
-                                    <span class="metric-value" id="metric-rtt">28 ms</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Latency (ms)</div>
-                                    <span class="metric-value" id="metric-latency">14 ms</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Data Saver Mode</div>
-                                    <span class="metric-value" id="metric-connection-mode">Off</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 6: System/Utility (12 Metrics) -->
-                        <div class="lg:col-span-2 col-span-1 metric-card p-4 rounded-lg">
-                            <h2 class="text-lg font-semibold mb-3 text-purple-400">UTILITY & APP STATE (12 Metrics)</h2>
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Current UTC Time</div>
-                                    <span class="metric-value text-xl" id="metric-time-utc">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2 col-span-2">
-                                    <div class="metric-label">Date (Local)</div>
-                                    <span class="metric-value text-xl" id="metric-date-local">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Local Timezone</div>
-                                    <span class="metric-value" id="metric-timezone">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">App Z-Index Counter</div>
-                                    <span class="metric-value" id="metric-z-index">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Running App Count</div>
-                                    <span class="metric-value" id="metric-app-count">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Mouse X Position</div>
-                                    <span class="metric-value" id="metric-mouse-x">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Mouse Y Position</div>
-                                    <span class="metric-value" id="metric-mouse-y">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Random Seed (Mock)</div>
-                                    <span class="metric-value" id="metric-random-seed">--</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Storage Used (Mock)</div>
-                                    <span class="metric-value" id="metric-storage">34%</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Build Hash (Mock)</div>
-                                    <span class="metric-value text-xs" id="metric-build-hash">a5f8e3d9</span>
-                                </div>
-                                <div class="border-b border-gray-700 pb-2">
-                                    <div class="metric-label">Build Time</div>
-                                    <span class="metric-value text-xs" id="metric-build-time">2025/07/15</span>
-                                </div>
-                                <div>
-                                    <div class="metric-label">Project Status</div>
-                                    <span class="metric-value text-accent-green" id="metric-project-status">Live</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            `;
-            getClientInfo();
-            getDisplayMetrics();
-            getNetworkMetrics();
-        }
-
-        let cpuLoad = 45; 
-        let usedRAM = 6.4; 
-        let batteryPercent = 92; 
-
-        // Retained Metrics helper functions (getClientInfo, getDisplayMetrics, etc.)
-        function getClientInfo() {
-            const ua = navigator.userAgent;
-            let browser = 'Unknown', version = 'N/A', osName = 'Unknown', osVersion = 'N/A';
-            
-            if (ua.indexOf("Chrome") > -1 && ua.indexOf("Edg") === -1) { browser = "Chrome"; version = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Firefox") > -1) { browser = "Firefox"; version = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) { browser = "Safari"; version = ua.match(/Version\/([\d.]+)/)?.[1] || 'N/A'; }
-            else if (ua.indexOf("Edg") > -1) { browser = "Edge"; version = ua.match(/Edg\/([\d.]+)/)?.[1] || 'N/A'; }
-
-            if (ua.indexOf("Win") > -1) { osName = "Windows"; osVersion = ua.match(/Windows NT ([\d.]+)/)?.[1] || '10+'; }
-            else if (ua.indexOf("Mac") > -1) { osName = "macOS"; osVersion = ua.match(/Mac OS X ([\d_.]+)/)?.[1].replace(/_/g, '.') || '10.15+'; }
-            else if (ua.indexOf("Linux") > -1) { osName = "Linux"; osVersion = 'Kernel'; }
-            else if (ua.indexOf("Android") > -1) { osName = "Android"; osVersion = ua.match(/Android ([\d.]+)/)?.[1] || '10+'; }
-            else if (ua.indexOf("like Mac") > -1) { osName = "iOS"; osVersion = ua.match(/OS ([\d_]+)/)?.[1].replace(/_/g, '.') || '15+'; }
-
-            const el = getMetricEl('metric-browser-name');
-            if(el) {
-                getMetricEl('metric-browser-name').textContent = browser;
-                getMetricEl('metric-browser-version').textContent = version;
-                getMetricEl('metric-os-name').textContent = osName;
-                getMetricEl('metric-os-version').textContent = osVersion;
-                getMetricEl('metric-user-agent').textContent = ua.substring(0, 80) + '...';
-                getMetricEl('metric-language').textContent = navigator.language;
-                getMetricEl('metric-cookies-enabled').textContent = navigator.cookieEnabled ? 'True' : 'False';
-                getMetricEl('metric-online-status').textContent = navigator.onLine ? 'Online' : 'Offline';
-            }
-        }
-
-        function getDisplayMetrics() {
-            const el = getMetricEl('metric-screen-res');
-            if(el) {
-                getMetricEl('metric-screen-res').textContent = `${screen.width} x ${screen.height}`;
-                getMetricEl('metric-viewport-size').textContent = `${window.innerWidth} x ${window.innerHeight}`;
-                getMetricEl('metric-orientation').textContent = window.innerWidth > window.innerHeight ? 'Landscape' : 'Portrait';
-                getMetricEl('metric-max-touch').textContent = navigator.maxTouchPoints;
-                getMetricEl('metric-color-depth').textContent = screen.colorDepth + ' bit';
-                getMetricEl('metric-dpr').textContent = window.devicePixelRatio.toFixed(2);
-                getMetricEl('metric-device-orientation').textContent = screen.orientation?.type.split('-')[0] || 'Unknown';
-                getMetricEl('metric-z-index').textContent = zIndexCounter;
-            }
-        }
-
-        function getPerformanceMetrics() {
-            const now = performance.now();
-            
-            if (!getMetricEl('metric-uptime')) return;
-
-            // Uptime (Time Since Init)
-            const seconds = (now / 1000).toFixed(2);
-            getMetricEl('metric-uptime').textContent = `${seconds} s`;
-            
-            // Memory (Approximation from Chrome/Edge)
-            if (window.performance && performance.memory) {
-                const used = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
-                const total = (performance.memory.totalJSHeapSize / 1048576).toFixed(1);
-                const limit = (performance.memory.jsHeapSizeLimit / 1048576).toFixed(1);
-
-                getMetricEl('metric-heap-used').textContent = used;
-                getMetricEl('metric-heap-total').textContent = total;
-                getMetricEl('metric-memory-limit').textContent = `${limit} MB`;
-            } else {
-                 getMetricEl('metric-heap-used').textContent = 'N/A';
-                 getMetricEl('metric-heap-total').textContent = 'N/A';
-                 getMetricEl('metric-memory-limit').textContent = 'N/A (Hidden by browser)';
-            }
-            
-            const navEntries = performance.getEntriesByType("navigation");
-            if (navEntries.length > 0) {
-                const nav = navEntries[0];
-                const loadTime = nav.loadEventEnd - nav.startTime;
-                getMetricEl('metric-time-origin').textContent = performance.timeOrigin.toFixed(0);
-                getMetricEl('metric-load-time').textContent = `${(loadTime > 0 ? loadTime : 250 + Math.random() * 50).toFixed(0)} ms`;
-                getMetricEl('metric-dns-lookup').textContent = `${(30 + Math.random() * 10).toFixed(0)} ms`;
-            }
-            
-            const paintEntries = performance.getEntriesByName("first-contentful-paint");
-            if (paintEntries.length > 0) {
-                getMetricEl('metric-time-paint').textContent = paintEntries[0].startTime.toFixed(0) + ' ms';
-            } else {
-                getMetricEl('metric-time-paint').textContent = (500 + Math.random() * 200).toFixed(0) + ' ms (Simulated)';
-            }
-        }
-        
-        function getNetworkMetrics() {
-             const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-             if (getMetricEl('metric-network-type')) {
-                if (connection) {
-                    getMetricEl('metric-network-type').textContent = connection.effectiveType ? connection.effectiveType.toUpperCase() : 'WIFI (Simulated)';
-                    getMetricEl('metric-downlink-speed').textContent = connection.downlink ? connection.downlink.toFixed(1) : (90 + Math.random() * 10).toFixed(1);
-                    getMetricEl('metric-rtt').textContent = connection.rtt ? `${connection.rtt} ms` : `${(25 + Math.random() * 10).toFixed(0)} ms`;
-                    getMetricEl('metric-latency').textContent = connection.rtt ? `${(connection.rtt / 2).toFixed(0)} ms` : `${(10 + Math.random() * 5).toFixed(0)} ms`;
-                    getMetricEl('metric-connection-mode').textContent = connection.saveData ? 'On' : 'Off';
-                } else {
-                    getMetricEl('metric-network-type').textContent = 'N/A (Simulated)';
-                    getMetricEl('metric-downlink-speed').textContent = '90.5';
-                    getMetricEl('metric-rtt').textContent = '35 ms';
-                    getMetricEl('metric-latency').textContent = '17 ms';
-                    getMetricEl('metric-connection-mode').textContent = 'Off';
-                }
-             }
-        }
-
-        function updateMockHardware() {
-            if (!getMetricEl('metric-cpu-load-val')) return;
-
-            cpuLoad = Math.min(99, Math.max(10, cpuLoad + (Math.random() - 0.5) * 5));
-            getMetricEl('metric-cpu-load-val').textContent = `${cpuLoad.toFixed(0)}%`;
-            getMetricEl('metric-cpu-load-bar').style.width = `${cpuLoad}%`;
-
-            usedRAM = Math.min(15.5, Math.max(5.0, usedRAM + (Math.random() - 0.5) * 0.1));
-            getMetricEl('metric-used-ram').textContent = `${usedRAM.toFixed(1)} GB`;
-
-            batteryPercent = Math.min(100, Math.max(1, batteryPercent + (Math.random() - 0.5) * 0.2));
-            const batStatus = batteryPercent > 90 ? 'Charged' : (batteryPercent > 20 ? 'Discharging' : 'Critical');
-            const batColor = batteryPercent > 50 ? '#22c55e' : (batteryPercent > 20 ? '#facc15' : '#ef4444');
-            
-            getMetricEl('metric-battery-percent').textContent = `${batteryPercent.toFixed(1)}%`;
-            getMetricEl('metric-battery-status').textContent = `(${batStatus} status)`;
-            getMetricEl('metric-battery-bar').style.width = `${batteryPercent}%`;
-            getMetricEl('metric-battery-bar').style.backgroundColor = batColor;
-            
-            getMetricEl('metric-random-seed').textContent = Math.random().toString(36).substring(2, 8);
-        }
-
-        function updateFPS(now) {
-            if (!getMetricEl('metric-fps')) return;
-
-            frameCount++;
-            const delta = now - lastFrameTime;
-
-            if (delta > 100 || frameCount >= 10) {
-                const fps = (frameCount / delta) * 1000;
-                getMetricEl('metric-fps').textContent = fps.toFixed(1);
-                lastFrameTime = now;
-                frameCount = 0;
-            }
-        }
-        
-        function updateMousePosition(e) {
-            if (getMetricEl('metric-mouse-x')) {
-                getMetricEl('metric-mouse-x').textContent = e.clientX;
-                getMetricEl('metric-mouse-y').textContent = e.clientY;
-            }
-        }
-
-        function metricsLoop(now) {
-            if (isMetricsLoopRunning) {
-                updateFPS(now);
-                getPerformanceMetrics();
-                updateMockHardware(); 
-                getDisplayMetrics(); 
-                requestAnimationFrame(metricsLoop);
-            }
-        }
-
-        function startMetricsLoop() {
-             if (isMetricsLoopRunning) return;
-             isMetricsLoopRunning = true;
-             
-             // Initial load for static info
-             getClientInfo();
-             getNetworkMetrics();
-             
-             window.addEventListener('mousemove', updateMousePosition);
-             requestAnimationFrame(metricsLoop);
-        }
-
-        
-        // --- 2. Java Pretty Printer App ---
-        function prettyPrintJava(code) {
-            // Logic remains the same
-            code = code.replace(/([\(\)\{\}\[\];,=])/g, ' $1 ');
-            code = code.replace(/\s+/g, ' ');
-            code = code.replace(/\s*([,;])\s*/g, '$1');
-            
-            let indent = 0;
-            let result = '';
-            const lines = code.split(/[\r\n]/g).map(line => line.trim()).filter(line => line.length > 0);
-
-            for (const line of lines) {
-                let trimmedLine = line.trim();
-
-                if (trimmedLine.startsWith('}') || trimmedLine.startsWith(']') || trimmedLine.startsWith(')')) {
-                    indent = Math.max(0, indent - 1);
-                }
-
-                result += '    '.repeat(indent) + trimmedLine;
-
-                if (trimmedLine.endsWith('{') || trimmedLine.endsWith('[') || (trimmedLine.endsWith('(') && !trimmedLine.endsWith(';'))) {
-                    indent++;
-                }
-                
-                result += '\n';
-            }
-            
-            return result.replace(/\n\s*\n/g, '\n').trim();
-        }
-        
-        const defaultJavaCode = `
-            public class Test {
-                public static void main( String [ ] args ) {
-                    int x = 10 ;
-                    for (int i=0; i<x; i++)
-                    { System.out.println("i is "+i);
-                    }
-                }
-            }
-        `;
-
-        function renderPrettyPrinter(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-3">
-                    <p class="text-sm text-gray-400">Input unformatted Java code, then click 'Format Code' to apply indentation and spacing rules.</p>
-                    
-                    <div class="grid grid-cols-2 gap-4 flex-grow" style="height: calc(100% - 80px);">
-                        <div class="flex flex-col">
-                            <label class="metric-label mb-1">Raw Input</label>
-                            <textarea id="pp-input" class="code-input flex-grow" placeholder="Paste your Java code here...">${defaultJavaCode.trim()}</textarea>
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="metric-label mb-1">Formatted Output</label>
-                            <textarea id="pp-output" class="code-output flex-grow" readonly placeholder="Formatted code will appear here..."></textarea>
-                        </div>
-                    </div>
-
-                    <button id="pp-format-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                        Format Code
-                    </button>
-                </div>
-            `;
-            
-            const inputEl = contentEl.querySelector('#pp-input');
-            const outputEl = contentEl.querySelector('#pp-output');
-            const formatBtn = contentEl.querySelector('#pp-format-btn');
-
-            const runFormatter = () => {
-                try {
-                    const formattedCode = prettyPrintJava(inputEl.value);
-                    outputEl.value = formattedCode;
-                } catch (error) {
-                    outputEl.value = `Error during formatting: ${error.message}`;
-                }
-            };
-            
-            formatBtn.addEventListener('click', runFormatter);
-            runFormatter();
-        }
-
-        // --- 3. Music Player App (New Functional Content) ---
-        // Default ambient track: Lofi/Chill (royalty-free source)
-        const DEFAULT_YT_ID = 'jfKfPfyJRdk'; 
-
-        function renderMusicPlayer(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <p class="text-sm text-gray-400">Embed a YouTube video ID below. Note: Autoplay may be restricted by your browser.</p>
-
-                    <!-- YouTube Iframe Container (Responsive aspect ratio) -->
-                    <div class="relative w-full" style="padding-top: 56.25%;"> 
-                        <iframe id="youtube-embed" 
-                                class="absolute top-0 left-0 w-full h-full rounded-lg shadow-xl"
-                                src="https://www.youtube.com/embed/${DEFAULT_YT_ID}?autoplay=0&controls=1&mute=0&rel=0" 
-                                frameborder="0" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                    </div>
-
-                    <!-- Input for new URL -->
-                    <div class="flex space-x-2">
-                        <input id="yt-id-input" type="text" value="${DEFAULT_YT_ID}" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-cyan-500" placeholder="Enter YouTube Video ID (e.g., jfKfPfyJRdk)">
-                        <button id="yt-load-btn" class="flex-shrink-0 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                            Load
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500 text-center">Video ID is the string after 'v=' in the URL.</p>
-                </div>
-            `;
-
-            const inputEl = contentEl.querySelector('#yt-id-input');
-            const loadBtn = contentEl.querySelector('#yt-load-btn');
-            const iframe = contentEl.querySelector('#youtube-embed');
-
-            loadBtn.addEventListener('click', () => {
-                const videoId = inputEl.value.trim();
-                if (videoId) {
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&mute=0&rel=0`;
-                } else {
-                    showMessage("Please enter a valid YouTube Video ID.");
-                }
-            });
-        }
-        
-        // --- 4. Calculator App (New Functional Content) ---
-
-        // Local state for the calculator (stored temporarily in a map)
-        const calculatorStates = {}; 
-        
-        function getCalcState(instanceId) {
-            if (!calculatorStates[instanceId]) {
-                calculatorStates[instanceId] = {
-                    display: '0',
-                    currentValue: null,
-                    operator: null,
-                    waitingForNewNumber: true
-                };
-            }
-            return calculatorStates[instanceId];
-        }
-
-        function renderCalculator(contentEl, instanceId) {
-            getCalcState(instanceId); // Initialize state
-
-            contentEl.innerHTML = `
-                <div class="flex flex-col h-full">
-                    <div id="calc-display-${instanceId}" class="calc-display">0</div>
-                    <div class="grid grid-cols-4 gap-2 flex-grow">
-                        <!-- Row 1 -->
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="clear" data-instance="${instanceId}">AC</button>
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="sign" data-instance="${instanceId}">±</button>
-                        <button class="calc-button bg-gray-500 hover:bg-gray-600" data-type="percent" data-instance="${instanceId}">%</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="/" data-instance="${instanceId}">÷</button>
-                        
-                        <!-- Row 2 -->
-                        <button class="calc-button" data-type="number" data-num="7" data-instance="${instanceId}">7</button>
-                        <button class="calc-button" data-type="number" data-num="8" data-instance="${instanceId}">8</button>
-                        <button class="calc-button" data-type="number" data-num="9" data-instance="${instanceId}">9</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="*" data-instance="${instanceId}">×</button>
-                        
-                        <!-- Row 3 -->
-                        <button class="calc-button" data-type="number" data-num="4" data-instance="${instanceId}">4</button>
-                        <button class="calc-button" data-type="number" data-num="5" data-instance="${instanceId}">5</button>
-                        <button class="calc-button" data-type="number" data-num="6" data-instance="${instanceId}">6</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="-" data-instance="${instanceId}">-</button>
-                        
-                        <!-- Row 4 -->
-                        <button class="calc-button" data-type="number" data-num="1" data-instance="${instanceId}">1</button>
-                        <button class="calc-button" data-type="number" data-num="2" data-instance="${instanceId}">2</button>
-                        <button class="calc-button" data-type="number" data-num="3" data-instance="${instanceId}">3</button>
-                        <button class="calc-button calc-op" data-type="operator" data-op="+" data-instance="${instanceId}">+</button>
-                        
-                        <!-- Row 5 -->
-                        <button class="calc-button col-span-2" data-type="number" data-num="0" data-instance="${instanceId}">0</button>
-                        <button class="calc-button" data-type="number" data-num="." data-instance="${instanceId}">.</button>
-                        <button class="calc-button calc-eq" data-type="equals" data-instance="${instanceId}">=</button>
-                    </div>
-                </div>
-            `;
-
-            contentEl.addEventListener('click', (e) => handleCalcClick(e.target));
-        }
-
-        function handleCalcClick(target) {
-            const type = target.dataset.type;
-            const instanceId = target.dataset.instance;
-            if (!type || !instanceId) return;
-
-            const state = getCalcState(instanceId);
-            const displayEl = document.getElementById(`calc-display-${instanceId}`);
-
-            if (type === 'number') {
-                const num = target.dataset.num;
-                if (state.waitingForNewNumber) {
-                    state.display = (num === '.') ? '0.' : num;
-                    state.waitingForNewNumber = false;
-                } else if (num === '.') {
-                    if (!state.display.includes('.')) {
-                        state.display += '.';
-                    }
-                } else {
-                    state.display = state.display === '0' ? num : state.display + num;
-                }
-            } else if (type === 'operator') {
-                if (state.currentValue === null || state.operator === null) {
-                    state.currentValue = parseFloat(state.display);
-                } else if (!state.waitingForNewNumber) {
-                    // Calculate intermediate result
-                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
-                    state.display = state.currentValue.toString();
-                }
-                state.operator = target.dataset.op;
-                state.waitingForNewNumber = true;
-            } else if (type === 'equals') {
-                if (state.currentValue !== null && state.operator !== null && !state.waitingForNewNumber) {
-                    state.currentValue = performCalculation(state.currentValue, parseFloat(state.display), state.operator);
-                    state.display = state.currentValue.toString();
-                    state.operator = null;
-                    state.waitingForNewNumber = true;
-                }
-            } else if (type === 'clear') {
-                state.display = '0';
-                state.currentValue = null;
-                state.operator = null;
-                state.waitingForNewNumber = true;
-            } else if (type === 'sign') {
-                state.display = (parseFloat(state.display) * -1).toString();
-            } else if (type === 'percent') {
-                state.display = (parseFloat(state.display) / 100).toString();
-            }
-
-            displayEl.textContent = state.display;
-        }
-
-        function performCalculation(val1, val2, op) {
-            val1 = parseFloat(val1);
-            val2 = parseFloat(val2);
-            switch (op) {
-                case '+': return val1 + val2;
-                case '-': return val1 - val2;
-                case '*': return val1 * val2;
-                case '/': return val1 / val2;
-                default: return val2;
-            }
-        }
-
-        // --- 5. To Do List App (New Functional Content) ---
-
-        const todoStates = {}; // { instanceId: [ { text: '...', done: false } ] }
-
-        function getTodoState(instanceId) {
-            if (!todoStates[instanceId]) {
-                todoStates[instanceId] = [
-                    { id: Date.now() + 1, text: 'Check out the Dev Metrics Hub 📈', done: false },
-                    { id: Date.now() + 2, text: 'Test the new Calculator 🧮', done: false },
-                    { id: Date.now() + 3, text: 'Try embedding a new YouTube music ID', done: true },
-                ];
-            }
-            return todoStates[instanceId];
-        }
-
-        function renderToDoList(contentEl, instanceId) {
-            const state = getTodoState(instanceId);
-
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-4">
-                    <p class="text-sm text-gray-400">Manage your quick development tasks.</p>
-
-                    <!-- Input Area -->
-                    <div class="flex space-x-2 flex-shrink-0">
-                        <input id="todo-input-${instanceId}" type="text" class="w-full p-2 rounded bg-gray-700 text-gray-200 border border-green-500" placeholder="New task...">
-                        <button id="todo-add-btn-${instanceId}" class="flex-shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">
-                            Add
-                        </button>
-                    </div>
-
-                    <!-- To Do List -->
-                    <div id="todo-list-${instanceId}" class="flex-grow overflow-y-auto">
-                        <!-- Items inserted here -->
-                    </div>
-                </div>
-            `;
-            
-            const inputEl = contentEl.querySelector(`#todo-input-${instanceId}`);
-            const listEl = contentEl.querySelector(`#todo-list-${instanceId}`);
-            
-            const renderList = () => {
-                listEl.innerHTML = state.map(item => `
-                    <div class="todo-item ${item.done ? 'todo-done' : ''}" data-id="${item.id}">
-                        <span class="todo-text flex-grow">${item.text}</span>
-                        <button class="todo-delete-btn" data-action="delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                `).join('');
-            };
-
-            const addTask = () => {
-                const text = inputEl.value.trim();
-                if (text) {
-                    state.push({ id: Date.now(), text, done: false });
-                    inputEl.value = '';
-                    renderList();
-                }
-            };
-            
-            contentEl.querySelector(`#todo-add-btn-${instanceId}`).addEventListener('click', addTask);
-            inputEl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addTask();
-            });
-
-            listEl.addEventListener('click', (e) => {
-                const itemEl = e.target.closest('.todo-item');
-                const actionBtn = e.target.closest('[data-action="delete"]');
-                if (!itemEl) return;
-                
-                const id = parseInt(itemEl.dataset.id);
-                const index = state.findIndex(item => item.id === id);
-
-                if (actionBtn) {
-                    // Delete action
-                    state.splice(index, 1);
-                } else {
-                    // Toggle done status
-                    state[index].done = !state[index].done;
-                }
-                renderList();
-            });
-
-            renderList();
-        }
-
-        // --- 6. Simple Text Editor App ---
-        function renderTextEditor(contentEl) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col space-y-3">
-                    <p class="text-sm text-gray-400">This is a simple text editor for quick notes. All content is lost when the app closes (persistence not enabled).</p>
-                    <textarea id="text-editor-area" class="code-input flex-grow h-full" placeholder="Start typing your notes here..."></textarea>
-                    
-                    <div class="flex justify-between items-center text-xs text-gray-500">
-                        <span id="char-count">0 Characters | 0 Words</span>
-                        <button onclick="document.getElementById('text-editor-area').value=''" class="text-red-400 hover:text-red-500 transition duration-150">Clear Document</button>
-                    </div>
-                </div>
-            `;
-            
-            const textarea = contentEl.querySelector('#text-editor-area');
-            const countDisplay = contentEl.querySelector('#char-count');
-            
-            const updateCount = () => {
-                const text = textarea.value;
-                const charCount = text.length;
-                const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-                countDisplay.textContent = `${charCount} Characters | ${wordCount} Words`;
-            };
-            
-            textarea.addEventListener('input', updateCount);
-            updateCount(); // Initial count
-        }
-        
-        // --- 7. Placeholder App ---
-        function renderPlaceholderApp(contentEl, appName) {
-            contentEl.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center p-8 text-center space-y-4">
-                    <div class="text-6xl text-cyan-400">🚧</div>
-                    <h2 class="text-2xl font-bold text-gray-200">${appName} v1.0</h2>
-                    <p class="text-gray-400">This application is currently under development. Its shell functions correctly within KVN.OS, but the main feature set is not yet implemented.</p>
-                    <p class="text-sm text-gray-500 font-mono">Status: Awaiting Kernel API integration...</p>
-                </div>
-            `;
-        }
-
-
-        // --- Loading Screen Logic (Remains) ---
-
-        const loadingMessages = [
-            "[INIT] System services starting (PID 1)...", 
-            "[KERN] Mapping virtual file system to /dev/vda1...",
-            "[MOD] Loading core modules: UI, PERF, CLIENT, WINDOW_MGR...",
-            "[NET] Starting network interface (eth0)...",
-            "[PERF] Calibrating performance counters...",
-            "[UI] Initializing app launcher (21 items)...", 
-            "[DSP] Configuring display server (Xorg 7.7)...",
-            "[WM] Starting window manager (KWM)...",
-            "[AUTH] Executing user initialization script...",
-            "[CONF] Applying system wide policies.",
-            "[PROC] Spawning metric collector daemon...",
-            "[MEM] Memory management initialized.",
-            "[SYS] Clock source synchronized.",
-            "[UI] Loading core assets (1/3)...", 
-            "[UI] Loading core assets (2/3)...",
-            "[UI] Loading core assets (3/3)...",
-            "[DEV] Loading environment variables.",
-            "[LOG] System log audit complete.",
-            "[NET] Testing connection (8.8.8.8)... OK.", 
-            "[BOOT] System integrity check passed. Complete." 
-        ];
-
-        window.onload = () => {
-            setInterval(updateTime, 1000);
-            createLauncherMenu(); // Build the app list immediately
-            startLoadingScreen();
+        // ======================================================================================
+        //
+        // CORE OS SIMULATION MODULES (Rebranded and Updated for FS and Browser)
+        //
+        // ======================================================================================
+
+        /**
+         * --------------------------------------------------------------------------------------
+         * SECTION 1: SYSTEM CONSTANTS AND UTILITIES
+         * --------------------------------------------------------------------------------------
+         */
+
+        const KB = 1024;
+        const RAM_SIZE_KB = 256;
+        const MAX_PROCESSES = 16;
+        const TIME_QUANTUM = 3;
+        const PROCESS_CYCLE_COST = 10;
+        const INIT_PROCESS_ID = 0;
+
+        const ProcessState = {
+            NEW: 'NEW', READY: 'READY', RUNNING: 'RUNNING', WAITING: 'WAITING', TERMINATED: 'TERMINATED'
         };
 
-        function startLoadingScreen() {
-            const bar = document.getElementById('loading-bar');
-            const status = document.getElementById('loading-status');
-            const bootLog = document.getElementById('boot-log');
-            const totalStages = loadingMessages.length;
-            const stageDuration = 100; 
+        const SystemCallType = {
+            CREATE_PROCESS: 'SYS_CREATE_PROC', TERMINATE_PROCESS: 'SYS_TERMINATE_PROC',
+            ALLOCATE_MEMORY: 'SYS_ALLOC_MEM', FREE_MEMORY: 'SYS_FREE_MEM',
+            FILE_WRITE: 'SYS_FILE_WRITE', FILE_READ: 'SYS_FILE_READ', IDLE: 'SYS_IDLE'
+        };
 
-            let currentStage = 0;
+        // Utility function for DOM interaction
+        const $ = (id) => document.getElementById(id);
+        const log = (message, type = 'terminal') => {
+            const output = $('console-output');
+            if (!output) return;
 
-            const loadInterval = setInterval(() => {
-                if (currentStage < totalStages) {
-                    status.textContent = loadingMessages[currentStage];
-                    bootLog.textContent += `\n${loadingMessages[currentStage]}`;
-                    const targetWidth = ((currentStage + 1) / totalStages) * 100;
-                    bar.style.width = `${targetWidth}%`;
-                    currentStage++;
-                } else {
-                    clearInterval(loadInterval);
-                    transitionToDesktop();
-                    
-                    // Launch the Metrics Hub as the initial application
-                    const metricsAppInfo = APPS.find(a => a.id === 'metrics');
-                    if (metricsAppInfo) {
-                        setTimeout(() => {
-                            createWindow(metricsAppInfo);
-                        }, 600);
+            const p = document.createElement('p');
+            let classes = "text-gray-300";
+            if (type === 'terminal') classes = "terminal-text";
+            if (type === 'error') classes = "error-text";
+            if (type === 'info') classes = "text-yellow-400";
+            if (type === 'prompt') classes = "prompt";
+            p.className = `text-sm ${classes}`;
+            p.innerHTML = message;
+            output.appendChild(p);
+            output.scrollTop = output.scrollHeight;
+        };
+
+        // UUID Generator for window/app IDs
+        const generateUUID = () => crypto.randomUUID();
+
+        /**
+         * --------------------------------------------------------------------------------------
+         * SECTION 2: PROCESS CONTROL BLOCK (PCB) & KERNEL MODULES
+         * --------------------------------------------------------------------------------------
+         */
+
+        class PCB {
+            constructor(pid, requiredCycles, memorySize, name = `Task-${pid}`) {
+                this.pid = pid;
+                this.name = name;
+                this.state = ProcessState.NEW;
+                this.requiredCycles = requiredCycles;
+                this.executedCycles = 0;
+                this.priority = 10;
+                this.memorySize = memorySize;
+                this.memoryBase = -1;
+                this.registers = { A: 0, B: 0, PC: 0 };
+                this.windowId = null;
+                log(`[KANVAS] PCB created for PID ${this.pid} (${this.name}). Memory: ${memorySize}KB`, 'info');
+            }
+
+            execute() {
+                if (this.executedCycles < this.requiredCycles) {
+                    this.executedCycles++;
+                    this.registers.PC++;
+                    this.registers.A += 1;
+                    return true;
+                }
+                return false;
+            }
+
+            isComplete() {
+                return this.executedCycles >= this.requiredCycles;
+            }
+        }
+
+        class MemoryManager {
+            constructor(sizeKB) {
+                this.sizeKB = sizeKB;
+                this.allocatedBlocks = [];
+                log(`[KANVAS] Memory Manager initialized. Total RAM: ${sizeKB} KB.`, 'info');
+            }
+
+            allocate(pid, sizeKB) {
+                if (sizeKB <= 0) return -1;
+                const totalUsed = this.allocatedBlocks.reduce((sum, block) => sum + block.size, 0);
+                if (totalUsed + sizeKB > this.sizeKB) {
+                    log(`[ERROR] PID ${pid}: Insufficient memory. Request: ${sizeKB}KB, Free: ${this.getFreeMemory()}KB`, 'error');
+                    return -1;
+                }
+
+                let currentAddress = 0;
+                this.allocatedBlocks.sort((a, b) => a.start - b.start);
+
+                for (const block of this.allocatedBlocks) {
+                    const gapSize = block.start - currentAddress;
+                    if (gapSize >= sizeKB) {
+                        const newBlock = { start: currentAddress, size: sizeKB, pid: pid };
+                        this.allocatedBlocks.push(newBlock);
+                        this.allocatedBlocks.sort((a, b) => a.start - b.start);
+                        log(`[MEM] PID ${pid} allocated ${sizeKB}KB at address ${currentAddress}.`, 'info');
+                        return currentAddress;
+                    }
+                    currentAddress = block.start + block.size;
+                }
+
+                if (this.sizeKB - currentAddress >= sizeKB) {
+                    const newBlock = { start: currentAddress, size: sizeKB, pid: pid };
+                    this.allocatedBlocks.push(newBlock);
+                    this.allocatedBlocks.sort((a, b) => a.start - b.start);
+                    log(`[MEM] PID ${pid} allocated ${sizeKB}KB at address ${currentAddress}.`, 'info');
+                    return currentAddress;
+                }
+
+                log(`[ERROR] PID ${pid}: Memory fragmentation prevents allocation of ${sizeKB}KB.`, 'error');
+                return -1;
+            }
+
+            free(pid) {
+                const initialCount = this.allocatedBlocks.length;
+                this.allocatedBlocks = this.allocatedBlocks.filter(block => block.pid !== pid);
+                if (initialCount !== this.allocatedBlocks.length) {
+                    log(`[MEM] PID ${pid}: Freed memory. Total blocks removed: ${initialCount - this.allocatedBlocks.length}.`, 'info');
+                    return true;
+                }
+                return false;
+            }
+
+            getFreeMemory() {
+                const totalUsed = this.allocatedBlocks.reduce((sum, block) => sum + block.size, 0);
+                return this.sizeKB - totalUsed;
+            }
+
+            getUsage() {
+                const totalUsed = this.allocatedBlocks.reduce((sum, block) => sum + block.size, 0);
+                return `${totalUsed}/${this.sizeKB}`;
+            }
+        }
+
+        class FileSystem {
+            constructor() {
+                // Root directory structure
+                this.root = {
+                    'home': {
+                        'user': {
+                            'notes.txt': { type: 'file', content: 'Use the text editor to create and save new files!', size: 60 },
+                            'README.md': { type: 'file', content: '# Kanvas FS\n\nThis is a simple file system simulator. Try exploring the directories.', size: 80 }
+                        },
+                        'admin': {}
+                    },
+                    'bin': {
+                        'sysinfo.sh': { type: 'file', content: 'Displays system information', size: 30 }
+                    },
+                    'web': {
+                        'index.html': { type: 'file', content: '<h1>Welcome to Kanvas Web</h1><p>This is a mock webpage on the simulated network.</p>', size: 80 }
+                    }
+                };
+                this.currentPath = ['home', 'user'];
+                log(`[FS] File System initialized.`, 'info');
+            }
+
+            _resolvePath(pathParts) {
+                let current = this.root;
+                for (const part of pathParts) {
+                    if (current[part] === undefined) return null;
+                    current = current[part];
+                }
+                return current;
+            }
+
+            // Normalizes a path string or array into an array of directory parts
+            _normalizePath(path) {
+                let pathParts = (typeof path === 'string' ? path.split('/') : path).filter(p => p.length > 0);
+                let current = [];
+
+                if (!path.startsWith('/')) {
+                    current = [...this.currentPath];
+                }
+
+                const finalPath = [];
+                for (const part of current.concat(pathParts)) {
+                    if (part === '..') {
+                        if (finalPath.length > 0) finalPath.pop();
+                    } else if (part !== '.') {
+                        finalPath.push(part);
                     }
                 }
-            }, stageDuration);
+                return finalPath;
+            }
+
+            listDirectory(path) {
+                let targetPathParts = this._normalizePath(path);
+                const targetDir = this._resolvePath(targetPathParts);
+                if (!targetDir) return { success: false, message: 'Directory not found.' };
+                if (targetDir.type === 'file') return { success: false, message: `${path} is a file.` };
+
+                return { success: true, files: Object.keys(targetDir) };
+            }
+
+            changeDirectory(path) {
+                const newPathParts = this._normalizePath(path);
+                const targetDir = this._resolvePath(newPathParts);
+
+                if (!targetDir) return { success: false, message: 'Directory not found.' };
+                if (targetDir.type === 'file') return { success: false, message: `${path} is a file, not a directory.` };
+
+                this.currentPath = newPathParts;
+                return { success: true, message: `Current path: /${this.currentPath.join('/')}` };
+            }
+
+            readFile(fullPath) {
+                const pathParts = this._normalizePath(fullPath);
+                const file = this._resolvePath(pathParts);
+
+                if (!file || file.type !== 'file') {
+                    return { success: false, message: `File not found: /${pathParts.join('/')}` };
+                }
+                return { success: true, content: file.content, name: pathParts[pathParts.length - 1] };
+            }
+
+            // Updated to handle file creation/overwrite
+            writeFile(fullPath, content) {
+                const pathParts = this._normalizePath(fullPath);
+                const filename = pathParts.pop();
+                const dir = this._resolvePath(pathParts);
+
+                if (!dir || dir.type === 'file') {
+                    return { success: false, message: 'Cannot write in this location.' };
+                }
+
+                const size = content.length;
+                dir[filename] = { type: 'file', content: content, size: size };
+                log(`[FS] Wrote ${size} bytes to /${pathParts.join('/')}/${filename}`, 'info');
+                return { success: true, message: `File '${filename}' written successfully.` };
+            }
+
+            // NEW: Create directory function
+            createDirectory(fullPath) {
+                const pathParts = this._normalizePath(fullPath);
+                const dirname = pathParts.pop();
+                const parentDir = this._resolvePath(pathParts);
+
+                if (!parentDir || parentDir.type === 'file') {
+                    return { success: false, message: 'Cannot create directory here. Parent is a file or path is invalid.' };
+                }
+                if (parentDir[dirname]) {
+                    return { success: false, message: `Item '${dirname}' already exists.` };
+                }
+
+                parentDir[dirname] = {}; // Create an empty directory object
+                log(`[FS] Created directory /${pathParts.join('/')}/${dirname}`, 'info');
+                return { success: true, message: `Directory '${dirname}' created successfully.` };
+            }
+
+            getCurrentPathString() {
+                return '/' + this.currentPath.join('/');
+            }
         }
 
-        function transitionToDesktop() {
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                setTimeout(() => {
-                    loadingScreen.classList.add('hidden');
-                    osShell.classList.remove('hidden');
-                }, 500); 
-            }, 300);
+        class Scheduler {
+            constructor(quantum) {
+                this.readyQueue = [];
+                this.quantum = quantum;
+                this.currentProcess = null;
+                this.quantumCounter = 0;
+            }
+
+            addToReadyQueue(pid) {
+                if (!this.readyQueue.includes(pid)) {
+                    this.readyQueue.push(pid);
+                }
+            }
+
+            getNextProcess(processes) {
+                if (this.currentProcess && this.currentProcess.state === ProcessState.RUNNING) {
+                    this.quantumCounter++;
+                    if (this.quantumCounter < this.quantum) {
+                        return this.currentProcess;
+                    }
+                    this.currentProcess.state = ProcessState.READY;
+                    this.addToReadyQueue(this.currentProcess.pid);
+                    log(`[SCHEDULER] PID ${this.currentProcess.pid} preempted (quantum expired).`, 'info');
+                    this.quantumCounter = 0;
+                    this.currentProcess = null;
+                }
+
+                if (!this.currentProcess && this.readyQueue.length > 0) {
+                    const nextPid = this.readyQueue.shift();
+                    const nextProcess = processes.get(nextPid);
+
+                    if (nextProcess) {
+                        nextProcess.state = ProcessState.RUNNING;
+                        this.currentProcess = nextProcess;
+                        this.quantumCounter = 1;
+                        return this.currentProcess;
+                    }
+                }
+                return null;
+            }
+
+            clearProcess(pid) {
+                this.readyQueue = this.readyQueue.filter(id => id !== pid);
+                if (this.currentProcess && this.currentProcess.pid === pid) {
+                    this.currentProcess = null;
+                }
+            }
         }
+
+        /**
+         * --------------------------------------------------------------------------------------
+         * SECTION 3: WINDOW MANAGER & GUI APPLICATIONS
+         * --------------------------------------------------------------------------------------
+         */
+
+        class WindowManager {
+            constructor(desktopElementId, kernel) {
+                this.desktop = $(desktopElementId);
+                this.kernel = kernel;
+                this.windows = new Map();
+                this.zIndexCounter = 1000;
+                this.taskbar = $('taskbar-apps');
+            }
+
+            focusWindow(windowId) {
+                const windowEntry = this.windows.get(windowId);
+                if (windowEntry) {
+                    this.zIndexCounter++;
+                    windowEntry.element.style.zIndex = this.zIndexCounter;
+                    Array.from(this.taskbar.children).forEach(btn => {
+                        if (btn.dataset.windowId === windowId) {
+                            btn.classList.add('bg-indigo-600');
+                            btn.classList.remove('bg-gray-700');
+                        } else {
+                            btn.classList.remove('bg-indigo-600');
+                            btn.classList.add('bg-gray-700');
+                        }
+                    });
+                }
+            }
+
+            launchApp(appName, AppClass, width = 600, height = 400) {
+                const processName = `${appName}-${this.kernel.pidCounter + 1}`;
+                const memorySize = 32;
+                const requiredCycles = 50 + Math.floor(Math.random() * 50);
+                this.kernel.createProcess(processName, memorySize, requiredCycles);
+                const pcb = this.kernel.processes.get(this.kernel.pidCounter);
+                const windowId = generateUUID();
+
+                const windowElement = document.createElement('div');
+                windowElement.id = `win-${windowId}`;
+                windowElement.className = 'window bg-gray-900 border-gray-700 flex flex-col';
+                windowElement.style.width = `${width}px`;
+                windowElement.style.height = `${height}px`;
+                windowElement.style.top = `${50 + this.windows.size * 20}px`;
+                windowElement.style.left = `${50 + this.windows.size * 20}px`;
+                windowElement.dataset.windowId = windowId;
+
+                windowElement.innerHTML = `
+                    <div class="window-header flex justify-between items-center p-2 bg-gray-800 text-sm font-semibold text-white border-b border-gray-700 select-none">
+                        <span>${appName} [PID ${pcb.pid}]</span>
+                        <div class="flex space-x-1">
+                            <button data-action="minimize" class="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-gray-600">-</button>
+                            <button data-action="close" class="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-red-700">X</button>
+                        </div>
+                    </div>
+                    <div id="content-${windowId}" class="flex-grow p-2 overflow-auto bg-gray-900">
+                        <!-- App Content Goes Here -->
+                    </div>
+                `;
+
+                this.desktop.appendChild(windowElement);
+
+                const appInstance = new AppClass(windowId, pcb, this.kernel);
+                appInstance.renderContent($(`content-${windowId}`));
+
+                this.windows.set(windowId, { element: windowElement, pcb, appInstance });
+                pcb.windowId = windowId;
+
+                this._makeDraggable(windowElement);
+                windowElement.addEventListener('mousedown', () => this.focusWindow(windowId));
+
+                this._addTaskbarButton(windowId, appName, pcb.pid);
+                this.focusWindow(windowId);
+
+                windowElement.querySelector('[data-action="close"]').addEventListener('click', () => {
+                    this.closeApp(windowId);
+                });
+                windowElement.querySelector('[data-action="minimize"]').addEventListener('click', () => {
+                    this.toggleMinimize(windowId);
+                });
+
+                log(`[WM] Launched ${appName} (PID ${pcb.pid}, Window ${windowId})`, 'info');
+            }
+
+            closeApp(windowId) {
+                const entry = this.windows.get(windowId);
+                if (entry) {
+                    this.kernel.handleSystemCall(SystemCallType.TERMINATE_PROCESS, entry.pcb.pid);
+
+                    entry.element.remove();
+                    this.windows.delete(windowId);
+
+                    $(`task-${windowId}`)?.remove();
+
+                    log(`[WM] Closed window for PID ${entry.pcb.pid}`, 'info');
+                }
+            }
+
+            toggleMinimize(windowId) {
+                const entry = this.windows.get(windowId);
+                if (entry) {
+                    const isHidden = entry.element.style.display === 'none';
+                    entry.element.style.display = isHidden ? 'flex' : 'none';
+                    if (isHidden) {
+                        this.focusWindow(windowId);
+                    } else {
+                        $(`task-${windowId}`).classList.remove('bg-indigo-600');
+                        $(`task-${windowId}`).classList.add('bg-gray-700');
+                    }
+                }
+            }
+
+            // FIX: Added null check for header element
+            _makeDraggable(element) {
+                const header = element.querySelector('.window-header');
+
+                if (!header) {
+                    // console.error("Window header not found for dragging on element:", element.id);
+                    return;
+                }
+
+                let isDragging = false;
+                let offsetX, offsetY;
+
+                header.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    this.focusWindow(element.dataset.windowId);
+                    offsetX = e.clientX - element.getBoundingClientRect().left;
+                    offsetY = e.clientY - element.getBoundingClientRect().top;
+                    header.style.cursor = 'grabbing';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    let newX = e.clientX - offsetX;
+                    let newY = e.clientY - offsetY;
+
+                    const desktopRect = this.desktop.getBoundingClientRect();
+                    newX = Math.max(0, Math.min(newX, desktopRect.width - element.offsetWidth));
+                    newY = Math.max(0, Math.min(newY, desktopRect.height - element.offsetHeight));
+
+                    element.style.left = `${newX}px`;
+                    element.style.top = `${newY}px`;
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    header.style.cursor = 'grab';
+                });
+            }
+
+            _addTaskbarButton(windowId, appName, pid) {
+                const button = document.createElement('button');
+                button.id = `task-${windowId}`;
+                button.dataset.windowId = windowId;
+                button.className = 'px-3 py-1 text-xs rounded transition-colors bg-gray-700 hover:bg-indigo-500 text-white';
+                button.textContent = `${appName} (PID ${pid})`;
+                button.addEventListener('click', () => {
+                    const entry = this.windows.get(windowId);
+                    if (entry.element.style.display === 'none') {
+                        this.toggleMinimize(windowId);
+                    }
+                    this.focusWindow(windowId);
+                });
+                this.taskbar.appendChild(button);
+            }
+        }
+
+        // --- Base Application Class ---
+        class BaseApp {
+            constructor(windowId, pcb, kernel) {
+                this.windowId = windowId;
+                this.pcb = pcb;
+                this.kernel = kernel;
+            }
+
+            // This method must be overridden by child classes
+            renderContent(container) {
+                container.innerHTML = `<p class="p-4">App content goes here...</p>`;
+            }
+        }
+
+        // --- 3.1: File Explorer Application (GUI) ---
+        class FileExplorerApp extends BaseApp {
+            constructor(windowId, pcb, kernel) {
+                super(windowId, pcb, kernel);
+                this.currentPath = this.kernel.fileSystem.getCurrentPathString();
+            }
+
+            renderContent(container) {
+                container.className = 'flex flex-col flex-grow bg-gray-800 text-white p-2 space-y-2';
+                container.innerHTML = `
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex space-x-2 p-1 bg-gray-700 rounded-lg items-center">
+                            <span class="text-xs font-mono text-indigo-300">Path:</span>
+                            <input id="path-${this.windowId}" type="text" class="flex-grow bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none" value="${this.currentPath}" readonly/>
+                            <button id="up-btn-${this.windowId}" class="p-1 rounded bg-gray-600 hover:bg-gray-500 text-xs">Up</button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input id="new-item-name-${this.windowId}" type="text" class="flex-grow bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none" placeholder="New file or folder name"/>
+                            <button id="new-file-btn-${this.windowId}" class="px-3 py-1 rounded bg-green-600 hover:bg-green-500 text-xs font-semibold">New File</button>
+                            <button id="new-dir-btn-${this.windowId}" class="px-3 py-1 rounded bg-yellow-600 hover:bg-yellow-500 text-xs font-semibold">New Folder</button>
+                        </div>
+                    </div>
+                    <div id="file-list-${this.windowId}" class="flex-grow overflow-y-auto space-y-1 p-2 border border-gray-700 rounded bg-gray-900 text-sm">
+                        <!-- File/Folder list goes here -->
+                    </div>
+                `;
+
+                this.updateFileList();
+
+                // Event Listeners
+                $(`up-btn-${this.windowId}`).addEventListener('click', () => this.navigate('..'));
+                $(`new-file-btn-${this.windowId}`).addEventListener('click', () => this.createNewItem('file'));
+                $(`new-dir-btn-${this.windowId}`).addEventListener('click', () => this.createNewItem('dir'));
+            }
+
+            // NEW: Creation logic
+            createNewItem(type) {
+                const nameInput = $(`new-item-name-${this.windowId}`);
+                const name = nameInput.value.trim();
+
+                if (!name) {
+                    return log(`[FS] Please enter a name for the new ${type}.`, 'error');
+                }
+
+                const fullPath = this.currentPath + (this.currentPath.endsWith('/') ? '' : '/') + name;
+                let result;
+
+                if (type === 'dir') {
+                    result = this.kernel.fileSystem.createDirectory(fullPath);
+                } else {
+                    // For a new file, create it with empty content
+                    result = this.kernel.fileSystem.writeFile(fullPath, 'Type content here...');
+                }
+
+                if (result.success) {
+                    nameInput.value = ''; // Clear input
+                    this.updateFileList();
+                } else {
+                    log(`[FS] Failed to create ${type}: ${result.message}`, 'error');
+                }
+            }
+
+            updateFileList() {
+                const listContainer = $(`file-list-${this.windowId}`);
+                const pathInput = $(`path-${this.windowId}`);
+                listContainer.innerHTML = '';
+
+                const result = this.kernel.fileSystem.listDirectory(this.currentPath);
+
+                if (!result.success) {
+                    listContainer.innerHTML = `<p class="error-text">Error: ${result.message}</p>`;
+                    return;
+                }
+
+                if (this.currentPath !== '/') {
+                    listContainer.appendChild(this._createFileItem('..', 'folder'));
+                }
+
+                const sortedFiles = result.files.sort((a, b) => {
+                    const pathA = this.kernel.fileSystem._normalizePath(this.currentPath + '/' + a);
+                    const pathB = this.kernel.fileSystem._normalizePath(this.currentPath + '/' + b);
+
+                    const isAFolder = !this.kernel.fileSystem._resolvePath(pathA)?.type;
+                    const isBFolder = !this.kernel.fileSystem._resolvePath(pathB)?.type;
+
+                    if (isAFolder && !isBFolder) return -1;
+                    if (!isAFolder && isBFolder) return 1;
+                    return a.localeCompare(b);
+                });
+
+                sortedFiles.forEach(name => {
+                    const fullPath = this.kernel.fileSystem._normalizePath(this.currentPath + '/' + name);
+                    const item = this.kernel.fileSystem._resolvePath(fullPath);
+
+                    if (item) {
+                        const type = item.type === 'file' ? 'file' : 'folder';
+                        listContainer.appendChild(this._createFileItem(name, type, fullPath.join('/')));
+                    }
+                });
+
+                pathInput.value = this.currentPath;
+            }
+
+            _createFileItem(name, type, fullPath = null) {
+                const itemDiv = document.createElement('div');
+                const icon = type === 'folder'
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>`;
+
+                itemDiv.className = 'file-icon flex items-center space-x-2 p-1 rounded';
+                itemDiv.innerHTML = `${icon}<span>${name}</span>`;
+
+                itemDiv.addEventListener('dblclick', () => {
+                    if (type === 'folder') {
+                        this.navigate(name);
+                    } else if (type === 'file') {
+                        // Open file in Text Editor
+                        const fullPathStr = fullPath ? '/' + fullPath : this.currentPath + '/' + name;
+                        desktopManager.windowManager.launchApp('Text Editor', TextEditorApp, 700, 500);
+                        const newApp = desktopManager.windowManager.windows.get(this.kernel.pidCounter.toString()).appInstance;
+                        newApp.loadFile(fullPathStr);
+                    }
+                });
+
+                return itemDiv;
+            }
+
+            navigate(name) {
+                let newPath;
+                if (name === '..') {
+                    const parts = this.kernel.fileSystem._normalizePath(this.currentPath);
+                    parts.pop();
+                    newPath = '/' + parts.join('/');
+                    if (newPath === '') newPath = '/';
+                } else {
+                    newPath = this.currentPath + (this.currentPath.endsWith('/') ? '' : '/') + name;
+                }
+
+                const normalizedPath = this.kernel.fileSystem._normalizePath(newPath);
+                const targetDir = this.kernel.fileSystem._resolvePath(normalizedPath);
+
+                if (targetDir && targetDir.type !== 'file') {
+                    this.currentPath = '/' + normalizedPath.join('/');
+                    if (this.currentPath === '//') this.currentPath = '/';
+                    this.updateFileList();
+                } else {
+                    log(`[FS] Cannot navigate to ${name}`, 'error');
+                }
+            }
+        }
+
+        // --- 3.2: Text Editor Application (Simulated) ---
+        class TextEditorApp extends BaseApp {
+            constructor(windowId, pcb, kernel) {
+                super(windowId, pcb, kernel);
+                this.content = "";
+                this.fileName = "Untitled.txt";
+                this.filePath = "";
+            }
+
+            renderContent(container) {
+                container.className = 'flex flex-col flex-grow bg-gray-900 text-white p-1 space-y-2';
+                container.innerHTML = `
+                    <div class="flex space-x-2 p-1 bg-gray-800 rounded-lg items-center">
+                        <span class="text-sm font-mono text-blue-300 mr-2" id="editor-title-${this.windowId}">${this.fileName}</span>
+                        <button id="save-btn-${this.windowId}" class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Save</button>
+                    </div>
+                    <textarea id="text-area-${this.windowId}" class="flex-grow w-full bg-black/50 border border-gray-700 rounded p-4 text-sm resize-none focus:outline-none focus:border-indigo-500" placeholder="Start typing..."></textarea>
+                `;
+
+                // Event Listeners
+                $(`save-btn-${this.windowId}`).addEventListener('click', () => this.saveFile());
+                $(`text-area-${this.windowId}`).value = this.content;
+            }
+
+            loadFile(fullPath) {
+                const result = this.kernel.fileSystem.readFile(fullPath);
+                if (result.success) {
+                    this.content = result.content;
+                    this.filePath = fullPath;
+                    this.fileName = result.name;
+                    $(`editor-title-${this.windowId}`).textContent = this.fileName;
+                    $(`text-area-${this.windowId}`).value = this.content;
+                    log(`[EDITOR] Loaded file ${this.fileName} from ${this.filePath}`, 'info');
+                } else {
+                    log(`[EDITOR] Error loading file: ${result.message}`, 'error');
+                }
+            }
+
+            saveFile() {
+                this.content = $(`text-area-${this.windowId}`).value;
+                let path = this.filePath;
+
+                if (!path) {
+                    // For unsaved files, default to the user's home directory
+                    path = this.kernel.fileSystem.getCurrentPathString() + '/' + this.fileName;
+                }
+
+                const result = this.kernel.fileSystem.writeFile(path, this.content);
+
+                if (result.success) {
+                    this.filePath = path;
+                    $(`editor-title-${this.windowId}`).textContent = this.fileName + ' (Saved)';
+                    log(`[EDITOR] File saved successfully to ${this.filePath}`, 'info');
+                } else {
+                    log(`[EDITOR] Save failed: ${result.message}`, 'error');
+                }
+            }
+        }
+
+        // --- 3.3: Web Browser Application (External Iframe) ---
+        class BrowserApp extends BaseApp {
+            constructor(windowId, pcb, kernel) {
+                super(windowId, pcb, kernel);
+                // CHANGED default URL to Wikipedia main page (embed-friendly example)
+                this.defaultURL = 'https://en.wikipedia.org/wiki/Main_Page';
+                this.currentURL = this.defaultURL;
+            }
+
+            renderContent(container) {
+                container.className = 'flex flex-col flex-grow bg-gray-100 text-gray-900 p-0';
+                container.innerHTML = `
+                    <div class="flex p-2 bg-gray-200 border-b border-gray-300 space-x-2">
+                        <input id="url-input-${this.windowId}" type="text" class="flex-grow bg-white border border-gray-400 rounded px-2 text-sm focus:outline-none" value="${this.currentURL}" placeholder="Enter URL (https:// required) or /local/path"/>
+                        <button id="go-btn-${this.windowId}" class="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white text-sm">Go</button>
+                    </div>
+                    <div id="browser-view-${this.windowId}" class="flex-grow overflow-hidden text-sm bg-white">
+                        <iframe id="browser-iframe-${this.windowId}" class="browser-iframe" src="${this.defaultURL}"></iframe>
+                    </div>
+                    <div id="browser-warning-${this.windowId}" class="p-1 text-center bg-yellow-100 text-yellow-800 text-xs font-medium">
+                        <span id="warning-text-${this.windowId}">Loading...</span>
+                    </div>
+                `;
+
+                // Event Listeners
+                $(`go-btn-${this.windowId}`).addEventListener('click', () => this.navigate($(`url-input-${this.windowId}`).value));
+                $(`url-input-${this.windowId}`).addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.navigate($(`url-input-${this.windowId}`).value);
+                });
+
+                // UPDATED warning message
+                this.updateWarning(true, "Note: Major search engines (Google, DuckDuckGo) block embedding. Try specific URLs or use /local/path to access Kanvas FS files.");
+            }
+
+            updateWarning(show, message = "") {
+                const warningElement = $(`browser-warning-${this.windowId}`);
+                const warningText = $(`warning-text-${this.windowId}`);
+                if (show) {
+                    warningText.textContent = message;
+                    warningElement.style.display = 'block';
+                } else {
+                    warningElement.style.display = 'none';
+                }
+            }
+
+            navigate(url) {
+                url = url.trim();
+                const iframe = $(`browser-iframe-${this.windowId}`);
+                $(`url-input-${this.windowId}`).value = url;
+                this.currentURL = url;
+
+                this.updateWarning(false); // Clear warning initially
+
+                // 1. Check for Local File System Path
+                if (url.startsWith('/')) {
+                    const result = this.kernel.fileSystem.readFile(url);
+                    if (result.success) {
+                        const htmlContent = `
+                            <!DOCTYPE html>
+                            <html lang="en">
+                            <head>
+                                <title>${result.name}</title>
+                                <style>body { font-family: 'Inter', sans-serif; background-color: #fff; color: #333; padding: 20px; }</style>
+                            </head>
+                            <body>
+                                ${result.content}
+                            </body>
+                            </html>
+                        `;
+                        // Load HTML directly into the iframe using a data URI
+                        iframe.src = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+                        this.updateWarning(true, `Loaded local file: ${result.name}`);
+                    } else {
+                        iframe.src = 'about:blank';
+                        this.updateWarning(true, `Error: Local file not found at ${url}`);
+                    }
+                }
+                // 2. Load External URL (Requires https:// and browser embedding capability)
+                else if (url.startsWith('http')) {
+                    if (!url.startsWith('https://')) {
+                         // Force HTTPS for better compatibility
+                        url = 'https://' + url.replace(/^(http|https):\/\//, '');
+                    }
+                    iframe.src = url;
+                    this.updateWarning(true, "Attempting to load external website. If it fails, the site likely blocks embedding (X-Frame-Options/CSP).");
+                }
+                // 3. Default Search/Invalid URL (Try as an external URL, but warn)
+                else {
+                    const fullUrl = `https://${url}`;
+                    iframe.src = fullUrl;
+                    this.updateWarning(true, `Attempting to load external website. If it fails, the site likely blocks embedding (X-Frame-Options/CSP).`);
+                }
+            }
+        }
+
+        // --- 3.4: Terminal Console Application (Rebranded) ---
+        class TerminalApp extends BaseApp {
+            renderContent(container) {
+                container.className = 'flex flex-col flex-grow bg-gray-900 overflow-hidden';
+                container.innerHTML = `
+                    <div id="console-output" class="console-output flex-grow p-4 text-sm overflow-y-auto space-y-1 bg-black/50">
+                        <p class="text-yellow-400">Kanvas Terminal Ready. Type 'help' for commands.</p>
+                    </div>
+                    <div class="p-3 border-t border-gray-700 flex items-center bg-gray-800">
+                        <span class="prompt text-sm mr-2">root@kanvas $</span>
+                        <input type="text" id="console-input" class="flex-grow bg-transparent terminal-text focus:outline-none" autofocus placeholder="Type commands..." />
+                    </div>
+                `;
+
+                this.inputElement = $('console-input');
+                this.inputElement.addEventListener('keypress', this.handleInput.bind(this));
+            }
+
+            handleInput(event) {
+                if (event.key === 'Enter') {
+                    const commandLine = this.inputElement.value.trim();
+                    log(`<span class="prompt">root@kanvas $</span> ${commandLine}`, 'prompt');
+                    this.inputElement.value = '';
+
+                    if (commandLine) {
+                        this.executeCommand(commandLine);
+                    }
+                }
+            }
+
+            executeCommand(commandLine) {
+                const parts = commandLine.toLowerCase().split(/\s+/);
+                const command = parts[0];
+                const args = parts.slice(1);
+
+                if (!this.kernel.timer && command !== 'start') {
+                    return log("[ERROR] Kernel is not running. Type 'start' to boot the OS.", 'error');
+                }
+
+                switch (command) {
+                    case 'help': this.showHelp(); break;
+                    case 'start': this.kernel.start(); break;
+                    case 'stop': this.kernel.stop(); break;
+                    case 'ps': this.showProcessList(); break;
+                    case 'exec': this.execProcess(args); break;
+                    case 'kill': this.killProcess(args); break;
+                    case 'ls': this.listDir(args); break;
+                    case 'cd': this.changeDir(args); break;
+                    case 'cat': this.readCat(args); break;
+                    case 'mkdir': this.makeDir(args); break; // NEW COMMAND
+                    case 'echo': this.writeEcho(commandLine); break;
+                    case 'clear': $('console-output').innerHTML = ''; break;
+                    case 'reboot': log("Simulating reboot...", 'info'); this.kernel.stop(); setTimeout(() => this.kernel.start(), 1000); break;
+                    default: log(`[ERROR] Command not found: ${command}.`, 'error');
+                }
+            }
+
+            showHelp() {
+                log("<br>--- Kanvas Terminal Commands ---", 'info');
+                log("  <span class='text-yellow-400'>start | stop | reboot</span>: Control kernel state.");
+                log("  <span class='text-yellow-400'>ps | exec [name] [mem] [cycles] | kill [pid]</span>: Process Management.");
+                log("  <span class='text-yellow-400'>ls [path] | cd [path] | cat [file] | mkdir [dir] | echo [content] > [file]</span>: File System Ops.");
+                log("  <span class='text-yellow-400'>clear</span>: Clear the console output.");
+            }
+
+            showProcessList() {
+                log("<br>--- Active Processes (PID | Name | State | Cycles) ---", 'info');
+                let found = false;
+                this.kernel.processes.forEach(pcb => {
+                    if (pcb.pid !== INIT_PROCESS_ID) {
+                        log(`  ${pcb.pid} | ${pcb.name.padEnd(8)} | ${pcb.state.padEnd(10)} | ${pcb.executedCycles}/${pcb.requiredCycles}`);
+                        found = true;
+                    }
+                });
+                if (!found) log("  No user processes running.", 'info');
+                log("<br>");
+            }
+
+            execProcess(args) {
+                const name = args[0] || `Proc-${Math.floor(Math.random() * 100)}`;
+                const mem = parseInt(args[1]) || 32;
+                const cycles = parseInt(args[2]) || PROCESS_CYCLE_COST;
+                if (mem < 8 || cycles < 1) return log("[ERROR] Invalid memory/cycle parameters. Min mem: 8KB, Min cycles: 1.", 'error');
+                this.kernel.createProcess(name, mem, cycles);
+            }
+
+            killProcess(args) {
+                const pid = parseInt(args[0]);
+                if (isNaN(pid) || pid <= INIT_PROCESS_ID || !this.kernel.processes.has(pid)) {
+                    return log("[ERROR] Invalid PID.", 'error');
+                }
+                this.kernel.handleSystemCall(SystemCallType.TERMINATE_PROCESS, pid);
+            }
+
+            listDir(args) {
+                const path = args[0] || this.kernel.fileSystem.getCurrentPathString();
+                const result = this.kernel.fileSystem.listDirectory(path);
+                if (result.success) {
+                    log(`Contents of ${path}:`, 'info');
+                    result.files.forEach(name => log(`  ${name}`));
+                } else {
+                    log(`[ERROR] ${result.message}`, 'error');
+                }
+            }
+
+            changeDir(args) {
+                const path = args[0];
+                if (!path) return log("[ERROR] Usage: cd <path>", 'error');
+                const result = this.kernel.fileSystem.changeDirectory(path);
+                if (result.success) {
+                    log(result.message, 'info');
+                } else {
+                    log(`[ERROR] ${result.message}`, 'error');
+                }
+            }
+
+            // NEW: mkdir command
+            makeDir(args) {
+                const dirname = args[0];
+                if (!dirname) return log("[ERROR] Usage: mkdir <dirname>", 'error');
+
+                // Resolve full path relative to current directory
+                const fullPath = this.kernel.fileSystem.getCurrentPathString() + (this.kernel.fileSystem.getCurrentPathString().endsWith('/') ? '' : '/') + dirname;
+                const result = this.kernel.fileSystem.createDirectory(fullPath);
+
+                if (result.success) {
+                    log(result.message, 'info');
+                } else {
+                    log(`[ERROR] ${result.message}`, 'error');
+                }
+            }
+
+            readCat(args) {
+                const filename = args[0];
+                if (!filename) return log("[ERROR] Usage: cat <filename>", 'error');
+                const result = this.kernel.fileSystem.readFile(filename);
+                if (result.success) {
+                    log(`--- Content of ${filename} ---`, 'info');
+                    log(result.content);
+                } else {
+                    log(`[ERROR] ${result.message}`, 'error');
+                }
+            }
+
+            writeEcho(commandLine) {
+                const match = commandLine.match(/^echo\s+(.+?)\s+>\s+(.+)$/i);
+                if (!match || match.length < 3) return log("[ERROR] Usage: echo <content> > <filename>", 'error');
+                const content = match[1].trim();
+                const filename = match[2].trim();
+                const result = this.kernel.fileSystem.writeFile(filename, content);
+                if (!result.success) {
+                    log(`[ERROR] ${result.message}`, 'error');
+                }
+            }
+        }
+
+        /**
+         * --------------------------------------------------------------------------------------
+         * SECTION 4: THE OS KERNEL (MAIN INTEGRATOR)
+         * --------------------------------------------------------------------------------------
+         */
+
+        class OS_Kernel {
+            constructor() {
+                this.clock = 0;
+                this.pidCounter = INIT_PROCESS_ID;
+                this.processes = new Map();
+                this.memManager = new MemoryManager(RAM_SIZE_KB);
+                this.scheduler = new Scheduler(TIME_QUANTUM);
+                this.fileSystem = new FileSystem();
+
+                this.timer = null;
+                this.TICK_RATE_MS = 100;
+
+                this.initIdleProcess();
+            }
+
+            setWindowManager(wm) {
+                this.windowManager = wm;
+            }
+
+            initIdleProcess() {
+                const idlePCB = new PCB(INIT_PROCESS_ID, Infinity, 0, 'Idle');
+                idlePCB.state = ProcessState.RUNNING;
+                this.processes.set(INIT_PROCESS_ID, idlePCB);
+                this.scheduler.currentProcess = idlePCB;
+                log(`[KANVAS] Initializing Kanvas Kernel... Idle Process (PID ${INIT_PROCESS_ID}) started.`, 'info');
+            }
+
+            start() {
+                if (this.timer) return;
+                log("[KANVAS] Simulation starting...", 'info');
+                this.timer = setInterval(() => this.systemTick(), this.TICK_RATE_MS);
+            }
+
+            stop() {
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                    log("[KANVAS] Simulation halted.", 'info');
+                }
+            }
+
+            systemTick() {
+                this.clock++;
+                let currentProcess = this.scheduler.getNextProcess(this.processes);
+
+                if (!currentProcess) {
+                    currentProcess = this.processes.get(INIT_PROCESS_ID);
+                }
+
+                if (currentProcess) {
+                    const isRunning = currentProcess.execute();
+                    if (!isRunning) {
+                        this.handleSystemCall(SystemCallType.TERMINATE_PROCESS, currentProcess.pid);
+                    }
+                }
+
+                this.updateUI();
+            }
+
+            handleSystemCall(type, pid) {
+                const pcb = this.processes.get(pid);
+                if (!pcb) return console.error(`[ERROR] System Call failed: PID ${pid} not found.`);
+
+                switch (type) {
+                    case SystemCallType.TERMINATE_PROCESS:
+                        pcb.state = ProcessState.TERMINATED;
+                        this.scheduler.clearProcess(pid);
+                        this.memManager.free(pid);
+
+                        if (pcb.windowId && this.windowManager) {
+                            const taskbarButton = $(`task-${pcb.windowId}`);
+                            if (taskbarButton) taskbarButton.remove();
+
+                            this.windowManager.windows.delete(pcb.windowId);
+                            const windowElement = $(`win-${pcb.windowId}`);
+                            if (windowElement) windowElement.remove();
+                        }
+
+                        this.processes.delete(pid);
+                        log(`[KANVAS] PID ${pid} (${pcb.name}) terminated.`, 'info');
+                        break;
+                    default:
+                        log(`[ERROR] Unknown system call type: ${type}`, 'error');
+                }
+            }
+
+            createProcess(name, memorySizeKB = 32, requiredCycles = PROCESS_CYCLE_COST) {
+                if (this.processes.size >= MAX_PROCESSES) {
+                    return log(`[ERROR] Cannot create process: Max process limit (${MAX_PROCESSES}) reached.`, 'error');
+                }
+
+                const newPid = ++this.pidCounter;
+                const baseAddress = this.memManager.allocate(newPid, memorySizeKB);
+
+                if (baseAddress === -1) {
+                    this.pidCounter--;
+                    return;
+                }
+
+                const newPCB = new PCB(newPid, requiredCycles, memorySizeKB, name);
+                newPCB.memoryBase = baseAddress;
+                newPCB.state = ProcessState.READY;
+
+                this.processes.set(newPid, newPCB);
+                this.scheduler.addToReadyQueue(newPid);
+
+                log(`[KANVAS] New process '${name}' created (PID ${newPid}). Added to Ready Queue.`, 'info');
+                return newPid;
+            }
+
+            updateUI() {
+                const currentProcess = this.scheduler.currentProcess;
+                const isIdle = !currentProcess || currentProcess.pid === INIT_PROCESS_ID;
+                const cpuStatusElement = $('cpu-status');
+
+                $('system-clock').textContent = `Clock: ${this.clock}`;
+                $('ram-usage').textContent = `RAM: ${this.memManager.getUsage()} KB`;
+
+                if (isIdle) {
+                    cpuStatusElement.textContent = 'Idle';
+                    cpuStatusElement.className = 'text-green-400';
+                } else {
+                    cpuStatusElement.textContent = `Running PID ${currentProcess.pid}`;
+                    cpuStatusElement.className = 'text-yellow-400';
+                }
+            }
+        }
+
+        /**
+         * --------------------------------------------------------------------------------------
+         * SECTION 5: DESKTOP MANAGER & INITIALIZATION
+         * --------------------------------------------------------------------------------------
+         */
+
+        let kernel;
+        let desktopManager;
+
+        class DesktopManager {
+            constructor() {
+                this.kernel = new OS_Kernel();
+                this.windowManager = new WindowManager('desktop', this.kernel);
+                this.kernel.setWindowManager(this.windowManager);
+
+                this.bindDesktopIcons();
+
+                // Start the kernel automatically for a modern OS feel
+                this.kernel.start();
+            }
+
+            bindDesktopIcons() {
+                $('icon-explorer').addEventListener('dblclick', () => {
+                    this.windowManager.launchApp('File Explorer', FileExplorerApp, 750, 550);
+                });
+                $('icon-editor').addEventListener('dblclick', () => {
+                    this.windowManager.launchApp('Text Editor', TextEditorApp, 700, 500);
+                });
+                $('icon-browser').addEventListener('dblclick', () => {
+                    this.windowManager.launchApp('Kanvas Web Browser', BrowserApp, 800, 600);
+                });
+                $('icon-terminal').addEventListener('dblclick', () => {
+                    this.windowManager.launchApp('Terminal', TerminalApp, 650, 450);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            desktopManager = new DesktopManager();
+
+            log("Kanvas Desktop OS v2.3 Initialized. Double-click icons to launch apps.", 'info');
+        });
 
     </script>
 </body>
